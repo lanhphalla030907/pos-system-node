@@ -10,3 +10,7 @@ npm install mysql2
 npm install -g nodemon for make the auto run what we change but add "dev": "nodemon index.js" in the packet.json too
 npm i bcrypt for the hash password 
 npm i jsonwebtoken (jwt)
+
+npm install node-cron auto send message to tlg bot
+npm install node-telegram-bot-api use the tlg-bot
+npm install dotenv make file .env

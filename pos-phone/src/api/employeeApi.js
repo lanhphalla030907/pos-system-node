@@ -42,3 +42,7 @@ export const updateEmployeeStatus = async (id, status) => {
 export const deleteEmployee = async (id) => {
   return await request(`employee/${id}`, "delete");
 };
+//create account employee
+export const createEmployeeAccount = async (id, data) => {
+  return await request(`employee/${id}/create-account`, "post", data);
+};

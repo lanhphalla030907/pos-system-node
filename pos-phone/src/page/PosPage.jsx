@@ -1,4 +1,4 @@
-// pages/PosPage.jsx
+// pages/PosPage.jsx - Fully Responsive
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import useProduct from '../hooks/useProduct';
@@ -9,9 +9,9 @@ import Cart from '../components/pos/Cart';
 import CheckoutModal from '../components/pos/CheckoutModal';
 import Receipt from '../components/pos/Receipt';
 import { prepareOrderItems, calculateCartTotals } from '../util/cartHelpers';
+import { FiRefreshCw, FiShoppingCart, FiMenu } from 'react-icons/fi';
 
 const PosPage = () => {
-  // Hooks
   const { products, loading, loadProducts, refreshStock } = useProduct();
   const { saveOrder, loading: orderLoading } = useOrder();
   const { 
@@ -23,18 +23,16 @@ const PosPage = () => {
     selectCustomer 
   } = useCustomer();
 
-  // State
   const [cart, setCart] = useState([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showReceipt, setShowReceipt] = useState(false);
   const [memberDiscount, setMemberDiscount] = useState(0);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Refs
   const receiptRef = useRef();
 
-  // Print receipt
   const printReceipt = useReactToPrint({
     contentRef: receiptRef,
     onAfterPrint: () => {
@@ -48,7 +46,6 @@ const PosPage = () => {
     }
   });
 
-  // Load products on mount
   useEffect(() => {
     if (isInitialLoad) {
       setIsInitialLoad(false);
@@ -56,7 +53,6 @@ const PosPage = () => {
     }
   }, [loadProducts, isInitialLoad]);
 
-  // Update member discount when customer changes
   useEffect(() => {
     if (selectedCustomer) {
       const discount = parseFloat(selectedCustomer.discount) || 0;
@@ -66,7 +62,6 @@ const PosPage = () => {
     }
   }, [selectedCustomer]);
 
-  // Cart operations
   const addToCart = useCallback((product) => {
     if (!product) return;
     
@@ -91,6 +86,11 @@ const PosPage = () => {
       }
       return [...prevCart, { ...product, quantity: 1 }];
     });
+    
+    // Auto open cart on mobile when adding items
+    if (window.innerWidth < 768) {
+      setIsCartOpen(true);
+    }
   }, []);
 
   const removeFromCart = useCallback((productId) => {
@@ -123,6 +123,7 @@ const PosPage = () => {
   const clearCart = useCallback(() => {
     if (window.confirm('Clear all items from cart?')) {
       setCart([]);
+      setIsCartOpen(false);
     }
   }, []);
 
@@ -138,12 +139,10 @@ const PosPage = () => {
     setIsCheckoutOpen(false);
   }, []);
 
-  // Handle customer selection
   const handleCustomerSelect = useCallback((customer) => {
     selectCustomer(customer);
   }, [selectCustomer]);
 
-  // Order processing - 
   const handleConfirmOrder = useCallback(async (orderData) => {
     const totals = calculateCartTotals(cart, memberDiscount);
     
@@ -160,7 +159,6 @@ const PosPage = () => {
       const res = await saveOrder(payload);
       
       if (res?.success) {
-        // Prepare receipt data
         const receiptData = {
           ...res.data,
           order_no: res.data?.order_no || `ORD-${String(res.data?.id || Date.now()).padStart(6, '0')}`,
@@ -193,14 +191,12 @@ const PosPage = () => {
         setLastOrder(receiptData);
         setShowReceipt(true);
         
-        // Reset cart and close modal
         setCart([]);
         setIsCheckoutOpen(false);
+        setIsCartOpen(false);
         
-        // Refresh stock
         await refreshStock();
         
-        // Auto print after short delay
         setTimeout(() => {
           printReceipt();
         }, 500);
@@ -213,12 +209,51 @@ const PosPage = () => {
     }
   }, [cart, selectedCustomer, memberDiscount, saveOrder, refreshStock, printReceipt]);
 
+  const toggleCart = () => {
+    setIsCartOpen(!isCartOpen);
+  };
+
   return (
-    <div className="h-screen flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleCart}
+            className="md:hidden relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <FiShoppingCart className="w-5 h-5 text-gray-600" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-black text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                {cart.length}
+              </span>
+            )}
+          </button>
+          <div>
+            <h1 className="text-base sm:text-lg font-semibold text-gray-800">Point of Sale</h1>
+            <p className="text-xs text-gray-400 hidden sm:block">Process customer orders</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedCustomer && (
+            <span className="text-xs text-gray-600 bg-gray-100 px-3 py-1 rounded-full hidden sm:inline-block">
+              {selectedCustomer.name}
+            </span>
+          )}
+          <button
+            onClick={() => loadProducts({ page: 1, limit: 100 })}
+            className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-600 text-xs sm:text-sm font-medium rounded-lg border border-gray-200 transition-colors"
+          >
+            <FiRefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${loading ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left - Product Grid */}
-        <div className="flex-1 p-3">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Product Grid */}
+        <div className={`flex-1 p-2 sm:p-3 md:p-4 overflow-y-auto ${isCartOpen ? 'hidden md:block' : 'block'}`}>
           <ProductGrid
             products={products}
             loading={loading}
@@ -227,15 +262,47 @@ const PosPage = () => {
           />
         </div>
 
-        {/* Right - Cart */}
-        <Cart
-          cart={cart}
-          onUpdateQuantity={updateQuantity}
-          onRemove={removeFromCart}
-          onClear={clearCart}
-          onCheckout={openCheckout}
-          memberDiscount={memberDiscount}
-        />
+        {/* Cart - Desktop */}
+        <div className={`hidden md:block flex-shrink-0`}>
+          <Cart
+            cart={cart}
+            onUpdateQuantity={updateQuantity}
+            onRemove={removeFromCart}
+            onClear={clearCart}
+            onCheckout={openCheckout}
+            memberDiscount={memberDiscount}
+          />
+        </div>
+
+        {/* Cart - Mobile Overlay */}
+        <div className={`
+          md:hidden fixed inset-0 z-40 transition-transform duration-300 ease-in-out
+          ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}>
+          <div className="absolute inset-0 bg-black/50" onClick={toggleCart}></div>
+          <div className="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-xl">
+            <Cart
+              cart={cart}
+              onUpdateQuantity={updateQuantity}
+              onRemove={removeFromCart}
+              onClear={clearCart}
+              onCheckout={openCheckout}
+              memberDiscount={memberDiscount}
+              onClose={toggleCart}
+            />
+          </div>
+        </div>
+
+        {/* Mobile Cart Button - Fixed */}
+        {cart.length > 0 && !isCartOpen && (
+          <button
+            onClick={toggleCart}
+            className="md:hidden fixed bottom-6 right-6 bg-black text-white p-4 rounded-full shadow-lg z-30 flex items-center gap-2"
+          >
+            <FiShoppingCart className="w-6 h-6" />
+            <span className="text-sm font-medium">{cart.length}</span>
+          </button>
+        )}
       </div>
 
       {/* Checkout Modal */}
@@ -254,7 +321,7 @@ const PosPage = () => {
         addCustomer={addCustomer}
       />
 
-      {/* Hidden Receipt - For Printing */}
+      {/* Hidden Receipt */}
       {showReceipt && lastOrder && (
         <div className="hidden">
           <Receipt

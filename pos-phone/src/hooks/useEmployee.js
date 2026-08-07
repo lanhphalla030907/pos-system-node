@@ -7,6 +7,7 @@ import {
   updateEmployee,
   updateEmployeeStatus,
   deleteEmployee,
+  createEmployeeAccount,
 } from '../api/employeeApi';
 
 export const useEmployee = () => {
@@ -137,7 +138,23 @@ export const useEmployee = () => {
       setLoading(false);
     }
   }, [loadEmployees]);
-
+  const addEmployeeAccount = useCallback(async (id, data) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await createEmployeeAccount(id, data);
+      if (res?.success) {
+        await loadEmployees();
+      }
+      return res;
+    } catch (error) {
+      console.error('Error creating employee account:', error);
+      setError(error.message);
+      return { success: false, message: error.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [loadEmployees]);
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -153,6 +170,7 @@ export const useEmployee = () => {
     editEmployee,
     changeStatus,
     removeEmployee,
+    addEmployeeAccount,
     clearError,
   };
 };

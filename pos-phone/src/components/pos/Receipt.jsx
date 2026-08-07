@@ -1,4 +1,4 @@
-// components/pos/Receipt.jsx
+
 import React from 'react';
 
 const Receipt = React.forwardRef(({ order, shopInfo = {} }, ref) => {
@@ -21,8 +21,6 @@ const Receipt = React.forwardRef(({ order, shopInfo = {} }, ref) => {
       hour12: false
     });
   };
-
-  // ✅ ប្រើ Data ពី Backend ទាំងអស់
   const subtotal = order.subtotal || 0;
   const totalProductDiscount = order.total_product_discount || 0;
   const totalMemberDiscount = order.total_member_discount || 0;
@@ -133,7 +131,7 @@ const Receipt = React.forwardRef(({ order, shopInfo = {} }, ref) => {
           )}
         </div>
 
-        {/* ✅ Totals - ប្រើ Data ពី Backend (គ្មាន Tax) */}
+      
         <div className="space-y-1">
           <div className="flex justify-between font-bold text-sm border-t border-dashed border-gray-300 pt-1.5">
             <span>TOTAL</span>

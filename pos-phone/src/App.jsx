@@ -19,6 +19,7 @@ import RoleManagement from "./page/role/RoleManagement";
 import PermissionManagement from "./page/role/PermissionManagement";
 import AddEmployee from "./page/employee/AddEmployee";
 import EmployeePage from "./page/employee/EmployeePage";
+import EmployeeDetails from "./page/employee/EmployeeDetails";
 
 const PlaceholderPage = ({ title }) => <div>{title}</div>;
 
@@ -31,7 +32,7 @@ function App() {
           <Route path="/employees" element={<EmployeePage />} />
           <Route path="/employees/add" element={<AddEmployee />} />
           <Route path="/employees/edit/:id" element={<AddEmployee />} />
-
+          <Route path="/employees/:id" element={<EmployeeDetails />} />
           <Route path="/user" element={<User />} />
           <Route path="/supplier" element={<Supplier />} />
           <Route path="/category" element={<Category />} />

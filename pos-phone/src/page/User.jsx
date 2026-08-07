@@ -14,6 +14,12 @@ import {
   FiClock,
   FiToggleLeft,
   FiToggleRight,
+  FiSearch,
+  FiEdit2,
+  FiTrash2,
+  FiMail,
+  FiCalendar,
+  FiCheckCircle,
 } from "react-icons/fi";
 import useUser from "../hooks/useUser";
 import useRole from "../hooks/useRole";
@@ -24,6 +30,7 @@ const User = () => {
   const { roles, loadRoles } = useRole();
 
   const [showModal, setShowModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -123,7 +130,6 @@ const User = () => {
     setSuccessMessage("");
   };
 
-  // Toggle user status
   const handleToggleStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 1 ? 0 : 1;
     setStatusUpdating(id);
@@ -158,11 +164,16 @@ const User = () => {
     });
   };
 
+  const filteredUsers = users.filter((user) =>
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.username?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const columns = [
     {
       key: "id",
       title: "ID",
-      width: "80px",
+      width: "60px",
       render: (row, index) => (
         <span className="text-xs text-gray-400 font-mono">
           #{String(index + 1).padStart(2, "0")}
@@ -174,12 +185,11 @@ const User = () => {
       title: "User",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm flex-shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-700 font-medium text-sm flex-shrink-0">
             {getInitials(row.name)}
           </div>
           <div>
             <p className="text-sm font-medium text-gray-800">{row.name || "Unknown"}</p>
-           
           </div>
         </div>
       ),
@@ -188,25 +198,23 @@ const User = () => {
       key: "username",
       title: "Username",
       render: (row) => (
-          <div>
-            <p className="text-sm font-medium text-gray-800">@{row.username || "Unknown"}</p>
-          </div>
+        <span className="text-sm text-gray-600">@{row.username || "Unknown"}</span>
       ),
     },
     {
       key: "role",
       title: "Role",
-      width: "140px",
+      width: "130px",
       render: (row) => {
         const roleColors = {
-          Admin: "bg-purple-100 text-purple-700",
-          Manager: "bg-blue-100 text-blue-700",
-          Cashier: "bg-green-100 text-green-700",
-          Account: "bg-amber-100 text-amber-700",
+          Admin: "bg-gray-100 text-gray-700",
+          Manager: "bg-gray-100 text-gray-700",
+          Cashier: "bg-gray-100 text-gray-700",
+          Account: "bg-gray-100 text-gray-700",
         };
         const colorClass = roleColors[row.role_name] || "bg-gray-100 text-gray-700";
         return (
-          <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${colorClass}`}>
+          <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${colorClass}`}>
             {row.role_name || "User"}
           </span>
         );
@@ -225,10 +233,10 @@ const User = () => {
     {
       key: "create_at",
       title: "Created At",
-      width: "160px",
+      width: "170px",
       render: (row) => (
         <div className="flex items-center gap-1.5 text-sm text-gray-500">
-          <FiClock className="w-5 h-5 text-gray-400" />
+          <FiClock className="w-3.5 h-3.5 text-gray-400" />
           <span>{formatDate(row.create_at)}</span>
         </div>
       ),
@@ -236,10 +244,10 @@ const User = () => {
     {
       key: "update_at",
       title: "Update At",
-      width: "160px",
+      width: "170px",
       render: (row) => (
         <div className="flex items-center gap-1.5 text-sm text-gray-500">
-          <FiClock className="w-5 h-5 text-gray-400" />
+          <FiClock className="w-3.5 h-3.5 text-gray-400" />
           <span>{formatDate(row.update_at)}</span>
         </div>
       ),
@@ -247,7 +255,7 @@ const User = () => {
     {
       key: "status",
       title: "Status",
-      width: "150px",
+      width: "130px",
       render: (row) => {
         const isActive = row.is_active === 1 || row.is_active === true;
         const isUpdating = statusUpdating === row.id;
@@ -258,8 +266,8 @@ const User = () => {
             disabled={isUpdating}
             className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               isActive
-                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                : "bg-rose-100 text-rose-700 hover:bg-rose-200"
+                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
             } ${isUpdating ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
           >
             {isUpdating ? (
@@ -268,9 +276,9 @@ const User = () => {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             ) : isActive ? (
-              <FiToggleRight className="w-4 h-4" />
+              <FiCheckCircle className="w-3.5 h-3.5" />
             ) : (
-              <FiToggleLeft className="w-4 h-4" />
+              <FiX className="w-3.5 h-3.5" />
             )}
             {isActive ? "Active" : "Inactive"}
           </button>
@@ -284,33 +292,45 @@ const User = () => {
       label: "Total Users",
       value: users.length,
       icon: FiUsers,
+      bgColor: "bg-gray-100",
+      textColor: "text-gray-700",
     },
     {
       label: "Active",
       value: users.filter((user) => user.is_active === 1 || user.is_active === true).length,
       icon: FiUserCheck,
+      bgColor: "bg-emerald-50",
+      textColor: "text-emerald-600",
     },
     {
       label: "Inactive",
       value: users.filter((user) => user.is_active !== 1 && user.is_active !== true).length,
       icon: FiUserX,
+      bgColor: "bg-gray-50",
+      textColor: "text-gray-500",
     },
     {
       label: "Admins",
       value: users.filter((user) => user.role_name === "Admin").length,
       icon: FiShield,
+      bgColor: "bg-gray-100",
+      textColor: "text-gray-700",
     },
   ];
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-xl font-semibold text-gray-800">User Management</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Manage your application users</p>
+          <h1 className="text-2xl font-semibold text-gray-800 tracking-tight">
+            User Management
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Manage your application users
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => {
               setFormData({
@@ -326,14 +346,14 @@ const User = () => {
               setSubmitError("");
               setSuccessMessage("");
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all shadow-sm"
           >
             <FiPlus className="w-4 h-4" />
             Add User
           </button>
           <button
             onClick={() => loadUsers()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
           >
             <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -348,19 +368,19 @@ const User = () => {
           return (
             <div
               key={index}
-              className="bg-white rounded-lg border border-gray-200 px-4 py-3"
+              className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                  <p className="text-sm text-gray-500 font-medium">
                     {stat.label}
                   </p>
-                  <p className="text-xl font-semibold text-gray-800 mt-0.5">
+                  <p className="text-2xl font-semibold text-gray-800 mt-1">
                     {stat.value}
                   </p>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
-                  <Icon className="w-4 h-4" />
+                <div className={`w-11 h-11 rounded-lg ${stat.bgColor} flex items-center justify-center ${stat.textColor}`}>
+                  <Icon className="w-5 h-5" />
                 </div>
               </div>
             </div>
@@ -368,128 +388,143 @@ const User = () => {
         })}
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+      {/* Search & Table */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-sm font-medium text-gray-700">User List</h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              {users.length} {users.length === 1 ? "user" : "users"}
+              {filteredUsers.length} {filteredUsers.length === 1 ? "user" : "users"} found
             </p>
+          </div>
+          <div className="relative">
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-48 md:w-64 pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+            />
           </div>
         </div>
 
         <Table
           columns={columns}
-          data={users}
+          data={filteredUsers}
           loading={loading}
           emptyMessage="No users found"
         />
       </div>
 
-      {/* Modal - Add User Only */}
+      {/* Add User Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-semibold text-gray-800">Add New User</h3>
-                <p className="text-xs text-gray-400">Create a new user account</p>
+                <h3 className="text-lg font-semibold text-gray-800">Add New User</h3>
+                <p className="text-sm text-gray-500">Create a new user account</p>
               </div>
               <button
                 onClick={handleCancel}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <FiX className="w-4 h-4" />
+                <FiX className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
               {successMessage && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-start gap-2">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3.5 flex items-start gap-3">
+                  <FiCheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-emerald-700">{successMessage}</p>
                 </div>
               )}
 
               {submitError && (
-                <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 flex items-start gap-2">
-                  <FiAlertCircle className="w-4 h-4 text-rose-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-rose-700">{submitError}</p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3.5 flex items-start gap-3">
+                  <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-700">{submitError}</p>
                 </div>
               )}
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Full Name *
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Full Name <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow ${
-                      formErrors.name ? "border-red-400" : "border-gray-200"
-                    }`}
-                    placeholder="John Doe"
-                  />
+                  <div className="relative">
+                    <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`w-full pl-10 pr-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white ${
+                        formErrors.name ? "border-red-400" : "border-gray-200"
+                      }`}
+                      placeholder="John Doe"
+                    />
+                  </div>
                   {formErrors.name && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.name}</p>
+                    <p className="mt-1.5 text-xs text-red-500">{formErrors.name}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Username *
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Username <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow ${
-                      formErrors.username ? "border-red-400" : "border-gray-200"
-                    }`}
-                    placeholder="johndoe"
-                  />
+                  <div className="relative">
+                    <FiHash className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      className={`w-full pl-10 pr-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white ${
+                        formErrors.username ? "border-red-400" : "border-gray-200"
+                      }`}
+                      placeholder="johndoe"
+                    />
+                  </div>
                   {formErrors.username && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.username}</p>
+                    <p className="mt-1.5 text-xs text-red-500">{formErrors.username}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Password *
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Password <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow ${
-                      formErrors.password ? "border-red-400" : "border-gray-200"
-                    }`}
-                    placeholder="Enter password"
-                  />
+                  <div className="relative">
+                    <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={`w-full pl-10 pr-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white ${
+                        formErrors.password ? "border-red-400" : "border-gray-200"
+                      }`}
+                      placeholder="Enter password"
+                    />
+                  </div>
                   {formErrors.password && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.password}</p>
+                    <p className="mt-1.5 text-xs text-red-500">{formErrors.password}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Role *
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Role <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="role_id"
                     value={formData.role_id}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow ${
+                    className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white ${
                       formErrors.role_id ? "border-red-400" : "border-gray-200"
                     }`}
                   >
@@ -501,39 +536,54 @@ const User = () => {
                     ))}
                   </select>
                   {formErrors.role_id && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.role_id}</p>
+                    <p className="mt-1.5 text-xs text-red-500">{formErrors.role_id}</p>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3 pt-1">
-                  <label className="text-xs font-medium text-gray-600">Status</label>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="is_active"
-                      checked={formData.is_active === 1}
-                      onChange={handleChange}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                    <span className="ms-3 text-sm text-gray-600">
-                      {formData.is_active === 1 ? "Active" : "Inactive"}
-                    </span>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Status
                   </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, is_active: 1 })}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                        formData.is_active === 1
+                          ? "bg-black text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      <FiCheckCircle className="w-4 h-4 inline mr-1.5" />
+                      Active
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, is_active: 0 })}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                        formData.is_active === 0
+                          ? "bg-black text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      <FiX className="w-4 h-4 inline mr-1.5" />
+                      Inactive
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="px-5 py-2.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all shadow-sm"
                 >
                   Create User
                 </button>
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
+                  className="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
@@ -547,7 +597,7 @@ const User = () => {
       {error && (
         <div className="fixed bottom-6 right-6 bg-white border border-gray-200 text-gray-700 px-4 py-3 rounded-lg shadow-lg max-w-sm">
           <div className="flex items-start gap-3">
-            <div className="w-7 h-7 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 flex-shrink-0">
+            <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center text-red-500 flex-shrink-0">
               <FiAlertCircle className="w-4 h-4" />
             </div>
             <div className="flex-1">

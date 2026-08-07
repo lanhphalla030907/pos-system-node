@@ -1,8 +1,4 @@
-// utils/orderHelpers.js
 
-/**
- * Calculate order totals from items
- */
 export const calculateOrderTotals = (items) => {
   if (!items || items.length === 0) {
     return {

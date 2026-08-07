@@ -4,11 +4,12 @@ import { request } from "../util/helper";
 export const getCustomer = async (filter = {}) => {
   const params = new URLSearchParams();
 
-  Object.keys(filter).forEach((key) => {
-    if (filter[key] !== "" && filter[key] !== undefined) {
-      params.append(key, filter[key]);
+  Object.entries(filter).forEach(([key, value]) => {
+    if (value !== "" && value !== undefined && value !== null) {
+      params.append(key, value);
     }
   });
+
   return await request(`customer?${params.toString()}`, "get");
 };
 

@@ -382,7 +382,7 @@ const ProductModal = ({
               <button
                 type="submit"
                 disabled={loading || barcodeLoading}
-                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
+                className="px-6 py-2.5 bg-gray-800 text-white rounded-lg hover:bg-gray-600 focus:ring-4 focus:ring-blue-200 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
               >
                 {loading ? (
                   <>

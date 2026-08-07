@@ -101,7 +101,7 @@ const ProductPagination = ({
                 onClick={() => handlePageClick(page)}
                 className={`px-3 py-1 text-sm rounded-md transition ${
                   page === currentPage
-                    ? 'bg-blue-600 text-white font-medium cursor-default'
+                    ? 'bg-gray-800 text-white font-medium cursor-default'
                     : 'text-gray-700 hover:bg-gray-200'
                 }`}
                 aria-label={`Go to page ${page}`}
@@ -148,7 +148,7 @@ const ProductPagination = ({
                 e.target.value = currentPage; // Reset input
               }
             }}
-            className="w-14 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="w-14 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-gray-500 outline-none"
             aria-label="Jump to page"
           />
           <span className="text-sm text-gray-600">of {totalPages}</span>

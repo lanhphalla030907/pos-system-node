@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import useProduct from "../../hooks/useProduct";
 import ProductModal from "../../components/product/ProductModal";
@@ -7,6 +6,16 @@ import ProductSearch from "../../components/product/ProductSearch";
 import ProductFilter from "../../components/product/ProductFilter";
 import ProductPagination from "../../components/product/ProductPagination";
 import { getActiveCategories } from "../../api/categoryApi";
+import {
+  FiPackage,
+  FiPlus,
+  FiRefreshCw,
+  FiTrendingUp,
+  FiTrendingDown,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiXCircle,
+} from "react-icons/fi";
 
 const ProductPage = () => {
   const { products, loading, pagination, loadProducts, addProduct, editProduct, removeProduct } = useProduct();
@@ -26,13 +35,11 @@ const ProductPage = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
- 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const res = await getActiveCategories();
         if (res?.success) {
-          // Make sure it's an array
           const categoriesData = Array.isArray(res.data) ? res.data : [];
           setCategories(categoriesData);
         } else {
@@ -55,7 +62,7 @@ const ProductPage = () => {
     }
   }, []);
 
-  //  Handle filter changes with debugging
+  // Handle filter changes
   const handleFilterChange = useCallback((newFilter) => {
     setFilter(newFilter);
     loadProducts(newFilter);
@@ -137,101 +144,147 @@ const ProductPage = () => {
     }
   };
 
+  // Calculate stats
+  const totalProducts = pagination.total || 0;
+  const inStock = products.filter(p => parseInt(p.qty) > 0).length;
+  const lowStock = products.filter(p => parseInt(p.qty) > 0 && parseInt(p.qty) <= 5).length;
+  const outOfStock = products.filter(p => parseInt(p.qty) === 0).length;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className=" px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage your product inventory</p>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800 tracking-tight">
+            Product Management
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Manage your product inventory
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => loadProducts(filter)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
+          >
+            <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
           <button
             onClick={handleAddClick}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition shadow-sm"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-lg transition-all shadow-sm text-sm font-medium"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
+            <FiPlus className="w-4 h-4" />
             Add Product
           </button>
         </div>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-500">Total Products</p>
-            <p className="text-2xl font-bold text-gray-900">{pagination.total || 0}</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-500">In Stock</p>
-            <p className="text-2xl font-bold text-green-600">
-              {products.filter(p => parseInt(p.qty) > 0).length}
-            </p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-500">Low Stock</p>
-            <p className="text-2xl font-bold text-yellow-600">
-              {products.filter(p => parseInt(p.qty) > 0 && parseInt(p.qty) <= 5).length}
-            </p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-500">Out of Stock</p>
-            <p className="text-2xl font-bold text-red-600">
-              {products.filter(p => parseInt(p.qty) === 0).length}
-            </p>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Total</p>
+              <p className="text-2xl font-semibold text-gray-800 mt-1">{totalProducts}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+              <FiPackage className="w-5 h-5" />
+            </div>
           </div>
         </div>
-
-        {/* Debug: Show categories count */}
-        <div className="text-xs text-gray-400 mb-2">
-          Categories loaded: {categories.length}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">In Stock</p>
+              <p className="text-2xl font-semibold text-emerald-600 mt-1">{inStock}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <FiCheckCircle className="w-5 h-5" />
+            </div>
+          </div>
         </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Low Stock</p>
+              <p className="text-2xl font-semibold text-amber-600 mt-1">{lowStock}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+              <FiAlertCircle className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Out of Stock</p>
+              <p className="text-2xl font-semibold text-red-600 mt-1">{outOfStock}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
+              <FiXCircle className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {/* Search and Filter */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <ProductSearch 
-              value={filter.search} 
-              onSearch={handleSearch} 
+      {/* Search and Filter */}
+      <div className="mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <ProductSearch 
+                value={filter.search} 
+                onSearch={handleSearch} 
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <ProductFilter
+              filter={filter}
+              categories={categories}
+              onFilterChange={handleFilterChange}
             />
           </div>
-          <ProductFilter
-            filter={filter}
-            categories={categories}
-            onFilterChange={handleFilterChange}
-          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
+          <div>
+            <h2 className="text-sm font-medium text-gray-700">Product List</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {totalProducts} products found
+            </p>
+          </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <ProductTable
-            products={products}
-            loading={loading}
-            onEdit={handleEditClick}
-            onDelete={handleDelete}
-          />
-          
-          
-          <ProductPagination
-            currentPage={pagination.currentPage || filter.page}
-            totalPages={pagination.totalPages || 1}
-            totalItems={pagination.total || 0}
-            limit={filter.limit}
-            onPageChange={handlePageChange}
-          />
-        </div>
-
-        {/* Modal */}
-        <ProductModal
-          isOpen={isModalOpen}
-          onClose={handleModalClose}
-          categories={categories}
-          isEdit={isEdit}
-          selectedProduct={selectedProduct}
-          onSubmit={handleSubmit}
+        <ProductTable
+          products={products}
+          loading={loading}
+          onEdit={handleEditClick}
+          onDelete={handleDelete}
+        />
+        
+        <ProductPagination
+          currentPage={pagination.currentPage || filter.page}
+          totalPages={pagination.totalPages || 1}
+          totalItems={pagination.total || 0}
+          limit={filter.limit}
+          onPageChange={handlePageChange}
         />
       </div>
+
+      {/* Modal */}
+      <ProductModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        categories={categories}
+        isEdit={isEdit}
+        selectedProduct={selectedProduct}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 };

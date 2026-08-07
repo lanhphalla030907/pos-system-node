@@ -1,5 +1,26 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useCustomer } from "../hooks/useCustomer";
+import {
+  FiUsers,
+  FiUserPlus,
+  FiSearch,
+  FiX,
+  FiEdit2,
+  FiTrash2,
+  FiUser,
+  FiPhone,
+  FiMail,
+  FiMapPin,
+  FiTag,
+  FiDollarSign,
+  FiClock,
+  FiCheckCircle,
+  FiStar,
+  FiRefreshCw,
+  FiShoppingBag,
+  FiChevronLeft,
+  FiChevronRight,
+} from "react-icons/fi";
 
 const CustomerPage = () => {
   const { 
@@ -9,12 +30,16 @@ const CustomerPage = () => {
     addCustomer, 
     editCustomer,
     removeCustomer,
-    selectCustomer 
+    selectCustomer,
+    pagination,
+    summary,
   } = useCustomer();
 
   const [filter, setFilter] = useState({
     search: "",
     type: "",
+    page: 1,
+    limit: 10,
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -50,12 +75,20 @@ const CustomerPage = () => {
     setFilter(prev => ({
       ...prev,
       [key]: value,
+      page: 1,
     }));
   };
 
   // Clear all filters
   const clearFilters = () => {
-    setFilter({ search: "", type: "" });
+    setFilter({ search: "", type: "", page: 1, limit: 10 });
+  };
+
+  // Handle pagination
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= (pagination?.totalPages || 1)) {
+      setFilter(prev => ({ ...prev, page: newPage }));
+    }
   };
 
   // Open modal for new customer
@@ -81,7 +114,7 @@ const CustomerPage = () => {
       email: customer.email || "",
       address: customer.address || "",
       type: customer.type || "regular",
-      discount: customer.discount || 0,
+      discount: parseFloat(customer.discount) || 0,
     });
     setIsModalOpen(true);
   };
@@ -111,10 +144,8 @@ const CustomerPage = () => {
     try {
       let res;
       if (editingCustomer) {
-        // Update existing customer
         res = await editCustomer(editingCustomer.id, formData);
       } else {
-        // Create new customer
         res = await addCustomer(formData);
       }
       
@@ -129,7 +160,6 @@ const CustomerPage = () => {
           type: "regular",
           discount: 0,
         });
-        // Reload customers
         loadCustomers(filter);
       } else {
         if (res?.message?.includes("already exists")) {
@@ -160,221 +190,269 @@ const CustomerPage = () => {
   // Handle select customer (for POS)
   const handleSelectCustomer = (customer) => {
     selectCustomer(customer);
-    alert(`Selected customer: ${customer.name} (Discount: ${customer.discount || 0}%)`);
+    alert(`Selected customer: ${customer.name} (Discount: ${parseFloat(customer.discount) || 0}%)`);
   };
 
   // Get customer type badge
   const getTypeBadge = (type) => {
     const typeMap = {
-      vip: { label: "VIP", color: "bg-yellow-100 text-yellow-800", icon: "⭐ " },
-      member: { label: "Member", color: "bg-green-100 text-green-800", icon: "" },
-      regular: { label: "Regular", color: "bg-blue-100 text-blue-800", icon: "" },
+      vip: { label: "VIP", color: "bg-amber-50 text-amber-700 border-amber-200", icon: FiStar },
+      member: { label: "Member", color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: FiCheckCircle },
+      regular: { label: "Regular", color: "bg-gray-50 text-gray-700 border-gray-200", icon: FiUser },
     };
-    const t = typeMap[type?.toLowerCase()] || typeMap.regular;
-    return t;
+    return typeMap[type?.toLowerCase()] || typeMap.regular;
   };
 
+  // Safely get customers array
+  const customerList = Array.isArray(customers) ? customers : [];
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div>
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Customers</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {loading ? "Loading..." : `${customers.length} customers found`}
-            </p>
-          </div>
-          <button
-            onClick={handleAddClick}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Customer
-          </button>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800 tracking-tight">
+            Customer Management
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {loading ? "Loading..." : `${summary?.total || 0} customers found`}
+          </p>
         </div>
+        <button
+          onClick={handleAddClick}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-lg transition-all shadow-sm text-sm font-medium"
+        >
+          <FiUserPlus className="w-4 h-4" />
+          Add Customer
+        </button>
+      </div>
 
-        {/* Filters Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                Search
-              </label>
-              <input
-                id="search"
-                type="text"
-                placeholder="Search by name, phone, email, or address..."
-                value={filter.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              />
+      {/* Stats Cards - Using summary from hook */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Total</p>
+              <p className="text-2xl font-semibold text-gray-800 mt-1">{summary?.total || 0}</p>
             </div>
+            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+              <FiUsers className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">VIP</p>
+              <p className="text-2xl font-semibold text-gray-800 mt-1">{summary?.vip || 0}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+              <FiStar className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Members</p>
+              <p className="text-2xl font-semibold text-gray-800 mt-1">{summary?.member || 0}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <FiCheckCircle className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Regular</p>
+              <p className="text-2xl font-semibold text-gray-800 mt-1">{summary?.regular || 0}</p>
+            </div>
+            <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600">
+              <FiUser className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <div className="sm:w-48">
-              <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                Customer Type
-              </label>
-              <select
-                id="type"
-                value={filter.type}
-                onChange={(e) => handleFilterChange("type", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-white"
+      {/* Filters Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mb-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="flex-1 relative">
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search by name, phone, email, or address..."
+              value={filter.search}
+              onChange={(e) => handleFilterChange("search", e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+            />
+            {filter.search && (
+              <button
+                onClick={() => handleFilterChange("search", "")}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <option value="">All Types</option>
-                <option value="vip">⭐ VIP</option>
-                <option value="member">Member</option>
-                <option value="regular">Regular</option>
-              </select>
-            </div>
-
-            {(filter.search || filter.type) && (
-              <div className="flex items-end">
-                <button
-                  onClick={clearFilters}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 underline underline-offset-2 transition"
-                >
-                  Clear filters
-                </button>
-              </div>
+                <FiX className="w-4 h-4" />
+              </button>
             )}
           </div>
-        </div>
 
-        {/* Results Section */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="sm:w-48">
+            <select
+              value={filter.type}
+              onChange={(e) => handleFilterChange("type", e.target.value)}
+              className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+            >
+              <option value="">All Types</option>
+              <option value="vip">⭐ VIP</option>
+              <option value="member">Member</option>
+              <option value="regular">Regular</option>
+            </select>
+          </div>
+
+          {(filter.search || filter.type) && (
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors whitespace-nowrap"
+            >
+              Clear filters
+            </button>
+          )}
+
+          <button
+            onClick={() => loadCustomers(filter)}
+            className="px-4 py-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Results Section */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-black border-t-transparent"></div>
+            <p className="text-sm text-gray-500 mt-3">Loading customers...</p>
+          </div>
+        ) : customerList.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FiUsers className="w-8 h-8 text-gray-300" />
             </div>
-          ) : customers.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No customers found</p>
-              <p className="text-gray-400 text-sm mt-1">Try adjusting your filters or add a new customer</p>
-            </div>
-          ) : (
+            <p className="text-gray-500 font-medium">No customers found</p>
+            <p className="text-sm text-gray-400 mt-1">
+              {filter.search || filter.type ? "Try adjusting your filters" : "Add your first customer"}
+            </p>
+            {!filter.search && !filter.type && (
+              <button
+                onClick={handleAddClick}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg transition-all text-sm font-medium"
+              >
+                <FiUserPlus className="w-4 h-4" />
+                Add Customer
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              {/* Desktop Table */}
+              <table className="w-full hidden md:table">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer Info
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Address
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Discount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Spent
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spent</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {customers.map((item) => {
+                <tbody className="divide-y divide-gray-100">
+                  {customerList.map((item) => {
                     const typeBadge = getTypeBadge(item.type);
+                    const Icon = typeBadge.icon;
+                    const discount = parseFloat(item.discount) || 0;
                     return (
-                      <tr key={item.id} className="hover:bg-gray-50 transition">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {item.id}
+                      <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-500">
+                          #{item.id}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-sm mr-3">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm flex-shrink-0">
                               {item.name?.charAt(0).toUpperCase() || "?"}
                             </div>
                             <div>
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-gray-800">
                                 {item.name || "N/A"}
                               </div>
-                              <div className="text-xs text-gray-500">
-                                Created by: {item.create_by || "System"}
+                              <div className="text-xs text-gray-400">
+                                ID: {item.id}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">
-                            {item.tel || "N/A"}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {item.email || "N/A"}
-                          </div>
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-700">{item.tel || "N/A"}</div>
+                          <div className="text-xs text-gray-400 truncate max-w-[120px]">{item.email || "N/A"}</div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                        <td className="px-4 py-3">
+                          <div className="text-sm text-gray-600 max-w-[150px] truncate">
                             {item.address || "N/A"}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${typeBadge.color}`}
-                          >
-                            {typeBadge.icon}
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full border ${typeBadge.color}`}>
+                            <Icon className="w-3 h-3" />
                             {typeBadge.label}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.discount > 0 
-                              ? "bg-purple-100 text-purple-800" 
-                              : "bg-gray-100 text-gray-600"
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full ${
+                            discount > 0 
+                              ? "bg-purple-50 text-purple-700 border border-purple-200" 
+                              : "bg-gray-50 text-gray-500 border border-gray-200"
                           }`}>
-                            {item.discount || 0}%
+                            <FiDollarSign className="w-3 h-3" />
+                            {discount}%
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-800">
                           ${parseFloat(item.total_spent || 0).toFixed(2)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(item.create_at)}
+                        <td className="px-4 py-3 text-sm text-gray-500">
+                          <div className="flex items-center gap-1.5">
+                            <FiClock className="w-3.5 h-3.5 text-gray-400" />
+                            <span>{formatDate(item.create_at)}</span>
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center space-x-2">
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => handleSelectCustomer(item)}
-                              className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50 transition"
+                              className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                               title="Select for POS"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                              </svg>
+                              <FiShoppingBag className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleEditClick(item)}
-                              className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition"
+                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               title="Edit customer"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
+                              <FiEdit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteClick(item)}
-                              className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition"
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="Delete customer"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
+                              <FiTrash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
@@ -383,124 +461,270 @@ const CustomerPage = () => {
                   })}
                 </tbody>
               </table>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {customerList.map((item) => {
+                  const typeBadge = getTypeBadge(item.type);
+                  const Icon = typeBadge.icon;
+                  const discount = parseFloat(item.discount) || 0;
+                  return (
+                    <div key={item.id} className="p-4 hover:bg-gray-50/80 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm flex-shrink-0">
+                            {item.name?.charAt(0).toUpperCase() || "?"}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-800">
+                              {item.name || "N/A"}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full border ${typeBadge.color}`}>
+                                <Icon className="w-3 h-3" />
+                                {typeBadge.label}
+                              </span>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                                discount > 0 
+                                  ? "bg-purple-50 text-purple-700 border border-purple-200" 
+                                  : "bg-gray-50 text-gray-500 border border-gray-200"
+                              }`}>
+                                <FiDollarSign className="w-3 h-3" />
+                                {discount}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleSelectCustomer(item)}
+                            className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                          >
+                            <FiShoppingBag className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleEditClick(item)}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <FiEdit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(item)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
+                        <div>
+                          <p className="text-xs text-gray-400">Phone</p>
+                          <p className="text-gray-700">{item.tel || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Email</p>
+                          <p className="text-gray-700 truncate">{item.email || "N/A"}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-400">Address</p>
+                          <p className="text-gray-600">{item.address || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Total Spent</p>
+                          <p className="text-sm font-medium text-gray-800">
+                            ${parseFloat(item.total_spent || 0).toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Created</p>
+                          <p className="text-xs text-gray-500">{formatDate(item.create_at)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Pagination */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="px-4 py-3 border-t border-gray-200 bg-gray-50/50 flex items-center justify-between flex-wrap gap-2">
+                <div className="text-sm text-gray-500">
+                  Showing {(pagination.page - 1) * pagination.limit + 1} -{' '}
+                  {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} customers
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handlePageChange(pagination.page - 1)}
+                    disabled={pagination.page <= 1}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FiChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="px-3 py-1 text-sm font-medium text-gray-700">
+                    Page {pagination.page} of {pagination.totalPages}
+                  </span>
+                  <button
+                    onClick={() => handlePageChange(pagination.page + 1)}
+                    disabled={pagination.page >= pagination.totalPages}
+                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FiChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Add/Edit Customer Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
-              {editingCustomer ? "Edit Customer" : "Add New Customer"}
-            </h2>
-            
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name *
-                  </label>
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {editingCustomer ? "Edit Customer" : "Add New Customer"}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  {editingCustomer ? "Update customer information" : "Create a new customer account"}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+                    placeholder="Enter customer name"
                     required
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
-                  </label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <FiPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="tel"
                     name="tel"
                     value={formData.tel}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+                    placeholder="Enter phone number"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+                    placeholder="Enter email address"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
-                  </label>
-                  <input
-                    type="text"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Customer Type
-                  </label>
-                  <select
-                    name="type"
-                    value={formData.type}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="regular">Regular</option>
-                    <option value="member">Member</option>
-                    <option value="vip">VIP</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discount (%)
-                  </label>
-                  <input
-                    type="number"
-                    name="discount"
-                    value={formData.discount}
-                    onChange={handleInputChange}
-                    min="0"
-                    max="100"
-                    step="0.5"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Custom discount for this customer (0-100%)
-                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Address
+                </label>
+                <div className="relative">
+                  <FiMapPin className="absolute left-3.5 top-3 text-gray-400 w-4 h-4" />
+                  <textarea
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    rows="2"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white resize-none"
+                    placeholder="Enter address"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Customer Type
+                  </label>
+                  <div className="relative">
+                    <FiTag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <select
+                      name="type"
+                      value={formData.type}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+                    >
+                      <option value="regular">Regular</option>
+                      <option value="member">Member</option>
+                      <option value="vip">VIP</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Discount (%)
+                  </label>
+                  <div className="relative">
+                    <FiDollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="number"
+                      name="discount"
+                      value={formData.discount}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all shadow-sm flex-1"
+                  disabled={loading}
+                >
+                  {loading ? "Saving..." : editingCustomer ? "Update Customer" : "Create Customer"}
+                </button>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                  className="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                  disabled={loading}
-                >
-                  {loading ? "Saving..." : editingCustomer ? "Update" : "Create"}
                 </button>
               </div>
             </form>
