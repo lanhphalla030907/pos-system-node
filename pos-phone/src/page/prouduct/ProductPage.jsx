@@ -18,7 +18,15 @@ import {
 } from "react-icons/fi";
 
 const ProductPage = () => {
-  const { products, loading, pagination, loadProducts, addProduct, editProduct, removeProduct } = useProduct();
+  const {
+    products,
+    loading,
+    pagination,
+    loadProducts,
+    addProduct,
+    editProduct,
+    removeProduct,
+  } = useProduct();
 
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState({
@@ -43,7 +51,10 @@ const ProductPage = () => {
           const categoriesData = Array.isArray(res.data) ? res.data : [];
           setCategories(categoriesData);
         } else {
-          console.error("❌ Failed to load categories:", res?.message || "Unknown error");
+          console.error(
+            "❌ Failed to load categories:",
+            res?.message || "Unknown error",
+          );
           setCategories([]);
         }
       } catch (error) {
@@ -63,24 +74,33 @@ const ProductPage = () => {
   }, []);
 
   // Handle filter changes
-  const handleFilterChange = useCallback((newFilter) => {
-    setFilter(newFilter);
-    loadProducts(newFilter);
-  }, [loadProducts]);
+  const handleFilterChange = useCallback(
+    (newFilter) => {
+      setFilter(newFilter);
+      loadProducts(newFilter);
+    },
+    [loadProducts],
+  );
 
   // Handle page change
-  const handlePageChange = useCallback((page) => {
-    const newFilter = { ...filter, page };
-    setFilter(newFilter);
-    loadProducts(newFilter);
-  }, [filter, loadProducts]);
+  const handlePageChange = useCallback(
+    (page) => {
+      const newFilter = { ...filter, page };
+      setFilter(newFilter);
+      loadProducts(newFilter);
+    },
+    [filter, loadProducts],
+  );
 
   // Handle search
-  const handleSearch = useCallback((value) => {
-    const newFilter = { ...filter, search: value, page: 1 };
-    setFilter(newFilter);
-    loadProducts(newFilter);
-  }, [filter, loadProducts]);
+  const handleSearch = useCallback(
+    (value) => {
+      const newFilter = { ...filter, search: value, page: 1 };
+      setFilter(newFilter);
+      loadProducts(newFilter);
+    },
+    [filter, loadProducts],
+  );
 
   // Handle add product
   const handleAddClick = () => {
@@ -109,10 +129,10 @@ const ProductPage = () => {
   // Handle form submit
   const handleSubmit = async (formData) => {
     const data = new FormData();
-    Object.keys(formData).forEach(key => {
-      if (key === 'image' && formData.image) {
-        data.append('image', formData.image);
-      } else if (key !== 'image') {
+    Object.keys(formData).forEach((key) => {
+      if (key === "image" && formData.image) {
+        data.append("image", formData.image);
+      } else if (key !== "image") {
         data.append(key, formData[key]);
       }
     });
@@ -146,9 +166,11 @@ const ProductPage = () => {
 
   // Calculate stats
   const totalProducts = pagination.total || 0;
-  const inStock = products.filter(p => parseInt(p.qty) > 0).length;
-  const lowStock = products.filter(p => parseInt(p.qty) > 0 && parseInt(p.qty) <= 5).length;
-  const outOfStock = products.filter(p => parseInt(p.qty) === 0).length;
+  const inStock = products.filter((p) => parseInt(p.qty) > 0).length;
+  const lowStock = products.filter(
+    (p) => parseInt(p.qty) > 0 && parseInt(p.qty) <= 5,
+  ).length;
+  const outOfStock = products.filter((p) => parseInt(p.qty) === 0).length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -167,7 +189,9 @@ const ProductPage = () => {
             onClick={() => loadProducts(filter)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
           >
-            <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <FiRefreshCw
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+            />
             Refresh
           </button>
           <button
@@ -185,8 +209,12 @@ const ProductPage = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Total</p>
-              <p className="text-2xl font-semibold text-gray-800 mt-1">{totalProducts}</p>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                Total
+              </p>
+              <p className="text-2xl font-semibold text-gray-800 mt-1">
+                {totalProducts}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
               <FiPackage className="w-5 h-5" />
@@ -196,8 +224,12 @@ const ProductPage = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">In Stock</p>
-              <p className="text-2xl font-semibold text-emerald-600 mt-1">{inStock}</p>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                In Stock
+              </p>
+              <p className="text-2xl font-semibold text-emerald-600 mt-1">
+                {inStock}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
               <FiCheckCircle className="w-5 h-5" />
@@ -207,8 +239,12 @@ const ProductPage = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Low Stock</p>
-              <p className="text-2xl font-semibold text-amber-600 mt-1">{lowStock}</p>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                Low Stock
+              </p>
+              <p className="text-2xl font-semibold text-amber-600 mt-1">
+                {lowStock}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
               <FiAlertCircle className="w-5 h-5" />
@@ -218,8 +254,12 @@ const ProductPage = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Out of Stock</p>
-              <p className="text-2xl font-semibold text-red-600 mt-1">{outOfStock}</p>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                Out of Stock
+              </p>
+              <p className="text-2xl font-semibold text-red-600 mt-1">
+                {outOfStock}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
               <FiXCircle className="w-5 h-5" />
@@ -233,10 +273,7 @@ const ProductPage = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <ProductSearch 
-                value={filter.search} 
-                onSearch={handleSearch} 
-              />
+              <ProductSearch value={filter.search} onSearch={handleSearch} />
             </div>
           </div>
           <div className="mt-4">
@@ -266,7 +303,7 @@ const ProductPage = () => {
           onEdit={handleEditClick}
           onDelete={handleDelete}
         />
-        
+
         <ProductPagination
           currentPage={pagination.currentPage || filter.page}
           totalPages={pagination.totalPages || 1}

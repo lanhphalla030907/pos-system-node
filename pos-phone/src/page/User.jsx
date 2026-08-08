@@ -10,6 +10,7 @@ import {
   FiHash,
   FiPlus,
   FiX,
+  FiLock,
   FiAlertCircle,
   FiClock,
   FiToggleLeft,

@@ -20,6 +20,7 @@ const ProductModal = ({
     description: "",
     qty: "0",
     price: "0",
+    cost_price:"0",
     discount: "0",
     status: "1",
     image: null,
@@ -80,6 +81,7 @@ const ProductModal = ({
         description: selectedProduct.description || "",
         qty: selectedProduct.qty?.toString() || "0",
         price: selectedProduct.price?.toString() || "0",
+        cost_price: selectedProduct.cost_price?.toString() || "0",
         discount: selectedProduct.discount?.toString() || "0",
         status: selectedProduct.status?.toString() || "1",
         image: null,
@@ -102,6 +104,7 @@ const ProductModal = ({
       description: "",
       qty: "0",
       price: "0",
+      cost_price: "0",
       discount: "0",
       status: "1",
       image: null,
@@ -282,6 +285,21 @@ const ProductModal = ({
                     step="0.01"
                     name="price"
                     value={formData.price}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cost Price ($) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="cost_price"
+                    value={formData.cost_price}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="0.00"

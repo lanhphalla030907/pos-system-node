@@ -20,6 +20,8 @@ import PermissionManagement from "./page/role/PermissionManagement";
 import AddEmployee from "./page/employee/AddEmployee";
 import EmployeePage from "./page/employee/EmployeePage";
 import EmployeeDetails from "./page/employee/EmployeeDetails";
+import PurchasePage from "./page/purchase/PurchasePage";
+import PurchaseDetailPage from "./page/purchase/PurchaseDetailPage";
 
 const PlaceholderPage = ({ title }) => <div>{title}</div>;
 
@@ -33,6 +35,8 @@ function App() {
           <Route path="/employees/add" element={<AddEmployee />} />
           <Route path="/employees/edit/:id" element={<AddEmployee />} />
           <Route path="/employees/:id" element={<EmployeeDetails />} />
+          <Route path="/purchases" element={<PurchasePage />} />
+          <Route path="/purchases/:id" element={<PurchaseDetailPage />} />
           <Route path="/user" element={<User />} />
           <Route path="/supplier" element={<Supplier />} />
           <Route path="/category" element={<Category />} />

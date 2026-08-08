@@ -53,6 +53,15 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
         </div>
       ),
     },
+     {
+      key: "cost_price",
+      title: "Cost Pirce",
+      render: (row) => (
+        <div>
+          <div className="font-medium text-gray-900">{row.cost_price}</div>
+        </div>
+      ),
+    },
     {
       key: "price",
       title: "Price",
