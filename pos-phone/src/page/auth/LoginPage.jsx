@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import { request } from "../../util/helper";
 import { setAccessToken, setProfile } from "../../store/profile.store";
 import { useNavigate } from "react-router-dom";
-import { 
-  FiMail, 
-  FiLock, 
-  FiEye, 
-  FiEyeOff, 
-  FiLogIn, 
+import {
+  FiMail,
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiLogIn,
   FiUser,
   FiCheckCircle,
   FiShield,
@@ -16,7 +16,7 @@ import {
   FiTrendingUp,
   FiPieChart,
   FiUsers,
-  FiShoppingBag
+  FiShoppingBag,
 } from "react-icons/fi";
 
 const LoginPage = () => {
@@ -36,35 +36,37 @@ const LoginPage = () => {
     });
     setError("");
   };
-
   const handleLogin = async (e) => {
     e.preventDefault();
-    
     if (!state.username.trim() || !state.password.trim()) {
       setError("Please fill in all fields");
       return;
     }
-
     setLoading(true);
     setError("");
+    try {
+      const param = {
+        username: state.username,
+        password: state.password,
+      };
+      const res = await request("auth/login", "post", param);
+      // Login success
+      if (res.success === true && res.access_token) {
+        setAccessToken(res.access_token);
+        setProfile(res.data);
 
-    var param = {
-      username: state.username,
-      password: state.password,
-    };
-
-    const res = await request("auth/login", "post", param);
-
-    if (!res.error) {
-      setAccessToken(res.access_token);
-      setProfile(res.data);
-      navigate("/");
-    } else {
-      setError(res.error?.username || res.error?.password || res.message || "Login failed");
+        navigate("/");
+        return;
+      }
+      // Login failed
+      setError(res.message || "Login failed");
+    } catch (error) {
+      console.error("LOGIN ERROR:", error);
+      setError("Unable to login. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
-
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-5">
@@ -74,12 +76,15 @@ const LoginPage = () => {
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-2xl"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-2xl"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-white/5 rounded-full"></div>
-          
+
           {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-5" style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-            backgroundSize: '40px 40px'
-          }}></div>
+          <div
+            className="absolute inset-0 opacity-5"
+            style={{
+              backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+              backgroundSize: "40px 40px",
+            }}
+          ></div>
 
           <div className="relative z-10 flex-1 flex flex-col">
             {/* Logo */}
@@ -87,7 +92,9 @@ const LoginPage = () => {
               <div className="w-11 h-11 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/10">
                 <FiGrid className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold tracking-tight">Dashboard</span>
+              <span className="text-xl font-bold tracking-tight">
+                Dashboard
+              </span>
             </div>
 
             {/* Welcome Message */}
@@ -149,7 +156,7 @@ const LoginPage = () => {
               </div>
               <span className="text-xl font-bold text-gray-800">Dashboard</span>
             </div>
-            
+
             <div className="mb-8 text-center lg:text-left">
               <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
                 Sign In
@@ -220,7 +227,11 @@ const LoginPage = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                    {showPassword ? (
+                      <FiEyeOff className="w-4 h-4" />
+                    ) : (
+                      <FiEye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -228,9 +239,9 @@ const LoginPage = () => {
               {/* Remember me */}
               <div className="flex items-center">
                 <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900" 
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
                   />
                   Remember me
                 </label>
@@ -255,7 +266,9 @@ const LoginPage = () => {
 
             {/* Demo Credentials */}
             <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-              <p className="text-xs text-gray-400 text-center mb-2">Demo Credentials</p>
+              <p className="text-xs text-gray-400 text-center mb-2">
+                Demo Credentials
+              </p>
               <div className="flex items-center justify-center gap-6 text-xs">
                 <div>
                   <span className="text-gray-500">Username:</span>

@@ -1,6 +1,6 @@
 const authService = require("../services/auth.service");
 
-//  GET ALL USERS 
+//  GET ALL USERS
 exports.getList = async (req, res) => {
   try {
     const list = await authService.getList();
@@ -18,7 +18,7 @@ exports.getList = async (req, res) => {
   }
 };
 
-//  REGISTER 
+//  REGISTER
 exports.register = async (req, res) => {
   try {
     const result = await authService.register({
@@ -41,14 +41,14 @@ exports.register = async (req, res) => {
   }
 };
 
-//  LOGIN 
+//  LOGIN
 exports.login = async (req, res) => {
   try {
     const result = await authService.login(
       req.body.username,
-      req.body.password
+      req.body.password,
+      req,
     );
-
     res.json({
       success: true,
       message: "Login success",
@@ -62,8 +62,7 @@ exports.login = async (req, res) => {
     });
   }
 };
-
-//  PROFILE 
+//  PROFILE
 exports.getProfile = async (req, res) => {
   try {
     const user = await authService.getProfile(req.current_id);
@@ -81,12 +80,12 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-//  UPDATE STATUS 
+//  UPDATE STATUS
 exports.updateStatus = async (req, res) => {
   try {
     const result = await authService.updateStatus(
       req.params.id,
-      req.body.is_active
+      req.body.is_active,
     );
 
     res.json({
@@ -101,5 +100,5 @@ exports.updateStatus = async (req, res) => {
   }
 };
 
-//  VALIDATE TOKEN 
+//  VALIDATE TOKEN
 exports.validate_token = authService.validateToken;

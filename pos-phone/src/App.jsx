@@ -22,6 +22,10 @@ import EmployeePage from "./page/employee/EmployeePage";
 import EmployeeDetails from "./page/employee/EmployeeDetails";
 import PurchasePage from "./page/purchase/PurchasePage";
 import PurchaseDetailPage from "./page/purchase/PurchaseDetailPage";
+import AddPurchasePage from "./page/purchase/AddPurchasePage";
+import PurchaseReportPage from "./page/purchase/PurchaseReportPage";
+import StockHistoryPage from "./page/prouduct/StockHistoryPage";
+import StockDashboardPage from "./page/prouduct/StockDashboardPage";
 
 const PlaceholderPage = ({ title }) => <div>{title}</div>;
 
@@ -37,6 +41,11 @@ function App() {
           <Route path="/employees/:id" element={<EmployeeDetails />} />
           <Route path="/purchases" element={<PurchasePage />} />
           <Route path="/purchases/:id" element={<PurchaseDetailPage />} />
+          <Route path="/purchases/report" element={<PurchaseReportPage />} />
+          <Route path="/stock" element={<StockDashboardPage />} />
+          <Route path="/stock/history" element={<StockHistoryPage />} />
+          <Route path="/purchases/add" element={<AddPurchasePage />} />
+          <Route path="/purchases/edit/:id" element={<AddPurchasePage />} />
           <Route path="/user" element={<User />} />
           <Route path="/supplier" element={<Supplier />} />
           <Route path="/category" element={<Category />} />

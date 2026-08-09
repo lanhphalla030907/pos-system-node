@@ -54,10 +54,6 @@ export const menuItems = [
 
   // Customers
   getItem("Customers", "/customers", <FiUsers className="w-5 h-5" />),
-
-  // Suppliers
-  getItem("Suppliers", "/supplier", <FiTruck className="w-5 h-5" />),
-
   // Sale Management
   getItem("Sale Management", "sale", <FiBarChart2 className="w-5 h-5" />, [
     getItem(
@@ -70,16 +66,32 @@ export const menuItems = [
 
   // Product Management
   getItem("Product Management", "products", <FiPackage className="w-5 h-5" />, [
+    getItem("Stock Dashboard", "/stock", <FiGrid className="w-4 h-4" />),
     getItem("Categories", "/category", <FiGrid className="w-4 h-4" />),
     getItem("Products", "/product", <FiBox className="w-4 h-4" />),
-    getItem("Brands", "/brand", <FiTag className="w-4 h-4" />),
+    getItem("Stock History", "/stock/history", <FiTag className="w-4 h-4" />),
   ]),
+  getItem(
+    "Purchase Management",
+    "purchase",
+    <FiPackage className="w-5 h-5" />,
+    [
+      getItem("Suppliers", "/supplier", <FiTruck className="w-5 h-5" />),
+      getItem("All Purchase", "/purchases", <FiBox className="w-4 h-4" />),
+      getItem("Add Purchase", "/purchases/add", <FiTag className="w-4 h-4" />),
+      getItem("Report", "/purchases/report", <FiTag className="w-4 h-4" />),
+    ],
+  ),
   //employee management
-  getItem("Employee Management", "employee", <FiPackage className="w-5 h-5" />, [
-    getItem("Employee", "/employees", <FiGrid className="w-4 h-4" />),
-    getItem("Add Employee", "/employees/add", <FiGrid className="w-4 h-4" />),
-   
-  ]),
+  getItem(
+    "Employee Management",
+    "employee",
+    <FiPackage className="w-5 h-5" />,
+    [
+      getItem("Employee", "/employees", <FiGrid className="w-4 h-4" />),
+      getItem("Add Employee", "/employees/add", <FiGrid className="w-4 h-4" />),
+    ],
+  ),
 
   // Expense Management
   getItem(

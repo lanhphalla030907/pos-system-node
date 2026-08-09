@@ -19,6 +19,7 @@ const ProductModal = ({
     brand: "",
     description: "",
     qty: "0",
+    min_stock: "0",
     price: "0",
     cost_price:"0",
     discount: "0",
@@ -80,6 +81,7 @@ const ProductModal = ({
         brand: selectedProduct.brand || "",
         description: selectedProduct.description || "",
         qty: selectedProduct.qty?.toString() || "0",
+        min_stock: selectedProduct.min_stock?.toString() || "0",
         price: selectedProduct.price?.toString() || "0",
         cost_price: selectedProduct.cost_price?.toString() || "0",
         discount: selectedProduct.discount?.toString() || "0",
@@ -103,6 +105,7 @@ const ProductModal = ({
       brand: "",
       description: "",
       qty: "0",
+      min_stock: "0",
       price: "0",
       cost_price: "0",
       discount: "0",
@@ -314,6 +317,19 @@ const ProductModal = ({
                     type="number"
                     name="qty"
                     value={formData.qty}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Min Stock Alert
+                  </label>
+                  <input
+                    type="number"
+                    name="min_stock"
+                    value={formData.min_stock}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                     placeholder="0"

@@ -23,7 +23,7 @@ CREATE TABLE customer (
 )
 
 
-
+CREATE TABLE login_history ( id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NULL, action VARCHAR(50) NOT NULL, status VARCHAR(20) NOT NULL, ip_address VARCHAR(100), user_agent TEXT, message VARCHAR(255), create_at DATETIME DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_login_history_user FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE SET NULL );
 CREATE TABLE suppiler (
     id int(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,
     name varchar(50) NOT NULL,
@@ -220,3 +220,5 @@ CREATE TABLE employee (
         ON DELETE SET NULL
         ON UPDATE CASCADE
 );
+
+CREATE TABLE audit_logs ( id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT NULL, action VARCHAR(50) NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'success', ip_address VARCHAR(45) NULL, user_agent TEXT NULL, metadata JSON NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_user_id (user_id), INDEX idx_action (action), INDEX idx_created_at (created_at), CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE SET NULL );

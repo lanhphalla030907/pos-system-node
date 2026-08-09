@@ -1,8 +1,9 @@
 const authRepository = require("../repositories/auth.repository");
 const bcrypt = require("bcrypt");
+const loginHistory = require("./loginHistory.service");
 const jwt = require("jsonwebtoken");
 const keyToken = "LWEJROI32209";
-//  REGISTER 
+//  REGISTER
 exports.register = async (data) => {
   // Check username already exists
   const exist = await authRepository.findByUsername(data.username);
@@ -27,17 +28,18 @@ exports.register = async (data) => {
   };
 };
 
-//  LOGIN 
-exports.login = async (username, password) => {
+exports.login = async (username, password, req) => {
   const user = await authRepository.findByUsername(username);
-
+  // Username not found
   if (!user) {
+    await loginHistory.loginFailed(null, "Username not found", req);
     throw new Error("Username not found");
   }
-
   const isCorrectPw = bcrypt.compareSync(password, user.password);
-
+  // Password incorrect
   if (!isCorrectPw) {
+    await loginHistory.loginFailed(user.id, "Password not match", req);
+
     throw new Error("Password not match");
   }
 
@@ -45,13 +47,15 @@ exports.login = async (username, password) => {
 
   const access_token = await createAccessToken(user);
 
+  // Login success
+  await loginHistory.loginSuccess(user, req);
+
   return {
     user,
     access_token,
   };
 };
-
-//  PROFILE 
+//  PROFILE
 exports.getProfile = async (id) => {
   const user = await authRepository.findById(id);
 
@@ -62,7 +66,7 @@ exports.getProfile = async (id) => {
   return user;
 };
 
-//  UPDATE STATUS 
+//  UPDATE STATUS
 exports.updateStatus = async (id, is_active) => {
   if (is_active != 0 && is_active != 1) {
     throw new Error("is_active must be 0 or 1");
@@ -79,7 +83,7 @@ exports.updateStatus = async (id, is_active) => {
   };
 };
 
-//  CREATE TOKEN 
+//  CREATE TOKEN
 const createAccessToken = async (user) => {
   const payload = {
     id: user.id,
@@ -87,19 +91,15 @@ const createAccessToken = async (user) => {
     username: user.username,
   };
 
-  return jwt.sign(
-    { data: payload },
-    keyToken,
-    {   
-      expiresIn: "7d",
-    }
-  );
+  return jwt.sign({ data: payload }, keyToken, {
+    expiresIn: "7d",
+  });
 };
 exports.getList = async () => {
-    const result = await authRepository.getList();
-    return result;
+  const result = await authRepository.getList();
+  return result;
 };
-//  VALIDATE TOKEN 
+//  VALIDATE TOKEN
 exports.validateToken = () => {
   return (req, res, next) => {
     const authorization = req.headers.authorization;
