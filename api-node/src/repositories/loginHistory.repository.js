@@ -24,3 +24,26 @@ exports.create = async (data) => {
 
   return result.insertId;
 };
+exports.getRecent = async (limit = 10) => {
+  const sql = `
+    SELECT
+      lh.id,
+      lh.user_id,
+      u.username,
+      lh.action,
+      lh.status,
+      lh.ip_address,
+      lh.user_agent,
+      lh.message,
+      lh.create_at
+    FROM login_history lh
+    LEFT JOIN user u
+      ON u.id = lh.user_id
+    ORDER BY lh.create_at DESC
+    LIMIT ?
+  `;
+
+  const [rows] = await db.query(sql, [Number(limit)]);
+
+  return rows;
+};

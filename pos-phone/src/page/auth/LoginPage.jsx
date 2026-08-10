@@ -55,7 +55,7 @@ const LoginPage = () => {
         setAccessToken(res.access_token);
         setProfile(res.data);
 
-        navigate("/");
+        navigate("/dashboard");
         return;
       }
       // Login failed

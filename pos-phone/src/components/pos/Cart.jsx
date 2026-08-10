@@ -1,4 +1,4 @@
-// components/pos/Cart.jsx - Responsive with close button
+// components/pos/Cart.jsx - Fully Sticky with proper height
 import React from 'react';
 import CartItem from './CartItem';
 import { calculateCartTotals } from '../../util/cartHelpers';
@@ -8,8 +8,8 @@ const Cart = ({ cart, onUpdateQuantity, onRemove, onClear, onCheckout, memberDis
   const totals = calculateCartTotals(cart, memberDiscount);
 
   return (
-    <div className="w-full md:w-80 bg-white shadow-lg flex flex-col border-l border-gray-200 h-full">
-      {/* Cart Header */}
+    <div className="w-full md:w-80 h-full bg-white shadow-lg flex flex-col border-l border-gray-200">
+      {/* Cart Header - Fixed */}
       <div className="px-3 sm:px-4 py-3 border-b border-gray-200 flex-shrink-0 bg-gray-50/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -47,10 +47,10 @@ const Cart = ({ cart, onUpdateQuantity, onRemove, onClear, onCheckout, memberDis
         )}
       </div>
 
-      {/* Cart Items */}
+      {/* Cart Items - Scrollable */}
       <div className="flex-1 overflow-y-auto px-2 sm:px-3 py-2">
         {cart.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 min-h-[200px]">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
               <FiShoppingCart className="w-8 h-8 text-gray-300" />
             </div>
@@ -58,19 +58,21 @@ const Cart = ({ cart, onUpdateQuantity, onRemove, onClear, onCheckout, memberDis
             <p className="text-xs text-gray-400 mt-1 text-center px-4">Click products to add</p>
           </div>
         ) : (
-          cart.map((item) => (
-            <CartItem
-              key={item.id}
-              item={item}
-              onUpdateQuantity={onUpdateQuantity}
-              onRemove={onRemove}
-              memberDiscount={memberDiscount}
-            />
-          ))
+          <div className="space-y-1.5">
+            {cart.map((item) => (
+              <CartItem
+                key={item.id}
+                item={item}
+                onUpdateQuantity={onUpdateQuantity}
+                onRemove={onRemove}
+                memberDiscount={memberDiscount}
+              />
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Cart Summary */}
+      {/* Cart Summary - Fixed at bottom */}
       {cart.length > 0 && (
         <div className="px-3 sm:px-4 py-3 border-t border-gray-200 bg-gray-50/50 flex-shrink-0">
           <div className="space-y-1.5 mb-3">

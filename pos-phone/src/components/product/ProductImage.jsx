@@ -30,7 +30,7 @@ const ProductImage = ({ image, alt, size = "md", className = "" }) => {
     <img
       src={imageUrl}
       alt={alt || "Product"}
-      className={`${sizeClass} object-cover rounded-lg border border-gray-200 ${className}`}
+      className={`${sizeClass} rounded-lg border border-gray-200 ${className}`}
       onError={(e) => {
         e.target.onerror = null;
         e.target.style.display = 'none';

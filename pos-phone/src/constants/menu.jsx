@@ -34,7 +34,7 @@ const getItem = (label, key, icon, children) => ({
 
 export const menuItems = [
   // Dashboard
-  getItem("Dashboard", "/", <FiHome className="w-5 h-5" />),
+  getItem("Dashboard", "/dashboard", <FiHome className="w-5 h-5" />),
 
   // POS Management
   getItem("POS Management", "pos", <FiShoppingCart className="w-5 h-5" />, [

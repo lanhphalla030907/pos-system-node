@@ -74,3 +74,6 @@ exports.loginFailed = async (userId, message, req) => {
     console.error("Telegram failed alert failed:", error.message);
   }
 };
+exports.getRecent = async (limit = 10) => {
+  return await loginHistoryRepository.getRecent(limit);
+};

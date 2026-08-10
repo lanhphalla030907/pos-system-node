@@ -1,4 +1,4 @@
-// pages/PosPage.jsx - Fully Responsive
+// pages/PosPage.jsx - Fixed with proper sticky positioning
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import useProduct from '../hooks/useProduct';
@@ -9,7 +9,7 @@ import Cart from '../components/pos/Cart';
 import CheckoutModal from '../components/pos/CheckoutModal';
 import Receipt from '../components/pos/Receipt';
 import { prepareOrderItems, calculateCartTotals } from '../util/cartHelpers';
-import { FiRefreshCw, FiShoppingCart, FiMenu } from 'react-icons/fi';
+import { FiRefreshCw, FiShoppingCart } from 'react-icons/fi';
 
 const PosPage = () => {
   const { products, loading, loadProducts, refreshStock } = useProduct();
@@ -87,7 +87,6 @@ const PosPage = () => {
       return [...prevCart, { ...product, quantity: 1 }];
     });
     
-    // Auto open cart on mobile when adding items
     if (window.innerWidth < 768) {
       setIsCartOpen(true);
     }
@@ -214,9 +213,9 @@ const PosPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between flex-shrink-0 z-20">
         <div className="flex items-center gap-3">
           <button
             onClick={toggleCart}
@@ -250,10 +249,10 @@ const PosPage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Full height with flex */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Product Grid */}
-        <div className={`flex-1 p-2 sm:p-3 md:p-4 overflow-y-auto ${isCartOpen ? 'hidden md:block' : 'block'}`}>
+        {/* Product Grid - Scrollable */}
+        <div className={`flex-1 overflow-y-auto p-2 sm:p-3 md:p-4 ${isCartOpen ? 'hidden md:block' : 'block'}`}>
           <ProductGrid
             products={products}
             loading={loading}
@@ -262,8 +261,8 @@ const PosPage = () => {
           />
         </div>
 
-        {/* Cart - Desktop */}
-        <div className={`hidden md:block flex-shrink-0`}>
+        {/* Cart - Desktop (Sticky) */}
+        <div className="hidden md:block flex-shrink-0 h-full">
           <Cart
             cart={cart}
             onUpdateQuantity={updateQuantity}
