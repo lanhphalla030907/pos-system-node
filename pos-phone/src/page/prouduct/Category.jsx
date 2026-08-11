@@ -15,9 +15,9 @@ import {
   FiHome,
   FiSearch,
 } from "react-icons/fi";
-import { request } from "../util/helper";
-import MainPage from "../components/layout/MainPage";
-import Table from "../components/ui/Table";
+import { request } from "../../util/helper";
+import MainPage from "../../components/layout/MainPage";
+import Table from "../../components/ui/Table";
 
 const Category = () => {
   // State Management
@@ -344,7 +344,7 @@ const Category = () => {
 
   return (
     <MainPage error={error}>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gray-50">
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

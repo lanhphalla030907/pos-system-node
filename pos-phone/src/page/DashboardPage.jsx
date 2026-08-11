@@ -1,4 +1,4 @@
-// pages/DashboardPage.jsx - Redesigned with Black theme, modern charts, and better UX
+// pages/DashboardPage.jsx - Redesigned with Black theme, Modern Charts, and Great UX
 import React, { useState, useEffect, useRef } from 'react';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency, formatDate } from '../util/orderHelper';
@@ -35,6 +35,8 @@ import {
   FiAlertCircle,
   FiXCircle,
   FiHome,
+  FiCalendar,
+  FiFilter,
 } from 'react-icons/fi';
 
 ChartJS.register(
@@ -57,21 +59,29 @@ const DashboardPage = () => {
     profitChart,
     recentLogins,
     loading,
+    chartPeriod,
     loadDashboard,
+    changeChartPeriod,
   } = useDashboard();
 
+  const [period, setPeriod] = useState('monthly');
+  const [chartType, setChartType] = useState('bar');
   const hasLoaded = useRef(false);
-  const [selectedChartType, setSelectedChartType] = useState('bar'); // 'bar' or 'line'
 
   useEffect(() => {
     if (!hasLoaded.current) {
       hasLoaded.current = true;
-      loadDashboard();
+      loadDashboard(period);
     }
-  }, [loadDashboard]);
+  }, [loadDashboard, period]);
 
-  // Modern Sales Chart Data - Black & Green theme
-  const salesLabels = salesChart.map(item => item.month);
+  const handlePeriodChange = async (newPeriod) => {
+    setPeriod(newPeriod);
+    await changeChartPeriod(newPeriod);
+  };
+
+  // Modern Sales Chart Data - Black theme with green accents
+  const salesLabels = salesChart.map(item => item.period);
   const salesChartData = {
     labels: salesLabels,
     datasets: [
@@ -123,6 +133,20 @@ const DashboardPage = () => {
           color: '#6b7280',
         },
       },
+      tooltip: {
+        backgroundColor: 'white',
+        titleColor: '#1a1a1a',
+        bodyColor: '#1a1a1a',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 12,
+        padding: 14,
+        callbacks: {
+          label: function(context) {
+            return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`;
+          }
+        }
+      }
     },
     scales: {
       y: {
@@ -158,7 +182,7 @@ const DashboardPage = () => {
   };
 
   // Modern Profit Chart Data
-  const profitLabels = profitChart.map(item => item.month);
+  const profitLabels = profitChart.map(item => item.period);
   const profitChartData = {
     labels: profitLabels,
     datasets: [
@@ -271,6 +295,20 @@ const DashboardPage = () => {
           color: '#6b7280',
         },
       },
+      tooltip: {
+        backgroundColor: 'white',
+        titleColor: '#1a1a1a',
+        bodyColor: '#1a1a1a',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 12,
+        padding: 14,
+        callbacks: {
+          label: function(context) {
+            return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`;
+          }
+        }
+      }
     },
     scales: {
       y: {
@@ -305,7 +343,70 @@ const DashboardPage = () => {
     },
   };
 
-  // Get status badge for recent actions
+  // Doughnut Chart Data - Revenue Distribution
+  const doughnutData = {
+    labels: ['Sales', 'Gross Profit', 'Net Profit', 'Expense'],
+    datasets: [
+      {
+        data: [
+          summary?.sales || 0,
+          summary?.gross_profit || 0,
+          summary?.net_profit || 0,
+          summary?.expense || 0,
+        ],
+        backgroundColor: [
+          'rgba(26, 26, 26, 0.8)',
+          'rgba(5, 150, 105, 0.7)',
+          'rgba(139, 92, 246, 0.7)',
+          'rgba(239, 68, 68, 0.6)',
+        ],
+        borderColor: ['#1a1a1a', '#059669', '#8b5cf6', '#ef4444'],
+        borderWidth: 3,
+      },
+    ],
+  };
+
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          padding: 20,
+          font: {
+            size: 12,
+            weight: '500',
+            family: "'Inter', system-ui, sans-serif",
+          },
+          color: '#6b7280',
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+            return `${context.label}: $${context.parsed.toLocaleString()} (${percentage}%)`;
+          },
+        },
+      },
+    },
+    cutout: '65%',
+  };
+
+  const getPeriodLabel = (period) => {
+    const labels = {
+      daily: 'Daily',
+      weekly: 'Weekly',
+      monthly: 'Monthly',
+      yearly: 'Yearly'
+    };
+    return labels[period] || period;
+  };
+
   const getStatusBadge = (status) => {
     const statusMap = {
       success: { label: 'Success', color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: FiCheckCircle },
@@ -317,10 +418,10 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen bg-gray-50">
       <div>
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex bg-white border border-gray-100 shadow-sm py-3.5 px-5 rounded-lg flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-gray-800 tracking-tight flex items-center gap-2">
               <FiHome className="w-6 h-6 text-gray-400" />
@@ -330,14 +431,26 @@ const DashboardPage = () => {
               {loading ? 'Loading...' : 'Real-time business overview'}
             </p>
           </div>
-          <button
-            onClick={loadDashboard}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
-            disabled={loading}
-          >
-            <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={period}
+              onChange={(e) => handlePeriodChange(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none bg-white"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+            <button
+              onClick={() => loadDashboard(period)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
+              disabled={loading}
+            >
+              <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
         {loading && !summary ? (
@@ -363,7 +476,7 @@ const DashboardPage = () => {
                   <div className="flex items-center gap-1 mt-2">
                     <FiTrendingUp className="w-3 h-3 text-emerald-500" />
                     <span className="text-xs text-emerald-600 font-medium">+12.5%</span>
-                    <span className="text-xs text-gray-400">vs last month</span>
+                    <span className="text-xs text-gray-400">vs last period</span>
                   </div>
                 </div>
 
@@ -380,7 +493,7 @@ const DashboardPage = () => {
                   <div className="flex items-center gap-1 mt-2">
                     <FiTrendingUp className="w-3 h-3 text-emerald-500" />
                     <span className="text-xs text-emerald-600 font-medium">+8.2%</span>
-                    <span className="text-xs text-gray-400">vs last month</span>
+                    <span className="text-xs text-gray-400">vs last period</span>
                   </div>
                 </div>
 
@@ -397,7 +510,7 @@ const DashboardPage = () => {
                   <div className="flex items-center gap-1 mt-2">
                     <FiTrendingUp className="w-3 h-3 text-emerald-500" />
                     <span className="text-xs text-emerald-600 font-medium">+5.7%</span>
-                    <span className="text-xs text-gray-400">vs last month</span>
+                    <span className="text-xs text-gray-400">vs last period</span>
                   </div>
                 </div>
 
@@ -414,7 +527,7 @@ const DashboardPage = () => {
                   <div className="flex items-center gap-1 mt-2">
                     <FiTrendingUp className="w-3 h-3 text-emerald-500" />
                     <span className="text-xs text-emerald-600 font-medium">+15.3%</span>
-                    <span className="text-xs text-gray-400">vs last month</span>
+                    <span className="text-xs text-gray-400">vs last period</span>
                   </div>
                 </div>
               </div>
@@ -452,7 +565,7 @@ const DashboardPage = () => {
                   <div className="flex items-center gap-1 mt-2">
                     <FiTrendingUp className="w-3 h-3 text-emerald-500" />
                     <span className="text-xs text-emerald-600 font-medium">+3.2%</span>
-                    <span className="text-xs text-gray-400">new this month</span>
+                    <span className="text-xs text-gray-400">new this period</span>
                   </div>
                 </div>
 
@@ -469,7 +582,7 @@ const DashboardPage = () => {
                   <div className="flex items-center gap-1 mt-2">
                     <FiTrendingDown className="w-3 h-3 text-red-500" />
                     <span className="text-xs text-red-600 font-medium">-2.1%</span>
-                    <span className="text-xs text-gray-400">vs last month</span>
+                    <span className="text-xs text-gray-400">vs last period</span>
                   </div>
                 </div>
 
@@ -486,28 +599,28 @@ const DashboardPage = () => {
                   <div className="flex items-center gap-1 mt-2">
                     <FiTrendingDown className="w-3 h-3 text-emerald-500" />
                     <span className="text-xs text-emerald-600 font-medium">-3.5%</span>
-                    <span className="text-xs text-gray-400">vs last month</span>
+                    <span className="text-xs text-gray-400">vs last period</span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Sales Chart */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            {/* Charts - 3 column layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Sales Chart - Takes 2 columns */}
+              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                 <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <FiBarChart2 className="w-4 h-4 text-gray-400" />
-                    <h3 className="text-sm font-semibold text-gray-800">Sales Overview</h3>
+                    <h3 className="text-sm font-semibold text-gray-800">Sales & Profit Trend</h3>
+                    <span className="text-xs text-gray-400 capitalize ml-2">({getPeriodLabel(chartPeriod)})</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">Monthly</span>
                     <div className="flex rounded-lg overflow-hidden border border-gray-200">
                       <button
-                        onClick={() => setSelectedChartType('bar')}
+                        onClick={() => setChartType('bar')}
                         className={`px-2.5 py-1 text-[10px] font-medium transition-all ${
-                          selectedChartType === 'bar'
+                          chartType === 'bar'
                             ? 'bg-black text-white'
                             : 'bg-white text-gray-600 hover:bg-gray-50'
                         }`}
@@ -515,9 +628,9 @@ const DashboardPage = () => {
                         Bar
                       </button>
                       <button
-                        onClick={() => setSelectedChartType('line')}
+                        onClick={() => setChartType('line')}
                         className={`px-2.5 py-1 text-[10px] font-medium transition-all ${
-                          selectedChartType === 'line'
+                          chartType === 'line'
                             ? 'bg-black text-white'
                             : 'bg-white text-gray-600 hover:bg-gray-50'
                         }`}
@@ -530,7 +643,7 @@ const DashboardPage = () => {
                 <div className="p-4 sm:p-6">
                   <div className="h-64 sm:h-72">
                     {salesChart.length > 0 ? (
-                      selectedChartType === 'bar' ? (
+                      chartType === 'bar' ? (
                         <Bar data={salesChartData} options={salesOptions} />
                       ) : (
                         <Line 
@@ -557,20 +670,20 @@ const DashboardPage = () => {
                 </div>
               </div>
 
-              {/* Profit Chart */}
+              {/* Doughnut Chart - Takes 1 column */}
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                 <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-                  <FiTrendingUp className="w-4 h-4 text-gray-400" />
-                  <h3 className="text-sm font-semibold text-gray-800">Profit Analysis</h3>
+                  <FiPieChart className="w-4 h-4 text-gray-400" />
+                  <h3 className="text-sm font-semibold text-gray-800">Revenue Distribution</h3>
                 </div>
                 <div className="p-4 sm:p-6">
                   <div className="h-64 sm:h-72">
-                    {profitChart.length > 0 ? (
-                      <Line data={profitChartData} options={profitOptions} />
+                    {summary && summary.sales > 0 ? (
+                      <Doughnut data={doughnutData} options={doughnutOptions} />
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                        <FiTrendingUp className="w-12 h-12 text-gray-300 mb-3" />
-                        <p className="text-sm font-medium">No profit data available</p>
+                        <FiPieChart className="w-12 h-12 text-gray-300 mb-3" />
+                        <p className="text-sm font-medium">No revenue data</p>
                       </div>
                     )}
                   </div>
@@ -578,12 +691,35 @@ const DashboardPage = () => {
               </div>
             </div>
 
-            {/* Recent Activity Table */}
+            {/* Profit Chart - Full width */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden mb-6">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <FiTrendingUp className="w-4 h-4 text-gray-400" />
+                  <h3 className="text-sm font-semibold text-gray-800">Profit Analysis</h3>
+                  <span className="text-xs text-gray-400 capitalize ml-2">({getPeriodLabel(chartPeriod)})</span>
+                </div>
+              </div>
+              <div className="p-4 sm:p-6">
+                <div className="h-64 sm:h-80">
+                  {profitChart.length > 0 ? (
+                    <Line data={profitChartData} options={profitOptions} />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                      <FiTrendingUp className="w-12 h-12 text-gray-300 mb-3" />
+                      <p className="text-sm font-medium">No profit data available</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Login Activity */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
               <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <FiClock className="w-4 h-4 text-gray-400" />
-                  <h3 className="text-sm font-semibold text-gray-800">Recent Activity</h3>
+                  <h3 className="text-sm font-semibold text-gray-800">Recent Login Activity</h3>
                 </div>
                 <span className="text-xs text-gray-400">
                   {recentLogins.length} activities

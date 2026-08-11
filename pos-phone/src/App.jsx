@@ -5,7 +5,6 @@ import Register from "./page/auth/Register";
 import HomePage from "./page/home/HomePage";
 import MainLayout from "./components/layout/MainLayout";
 
-import Category from "./page/Category";
 import User from "./page/User";
 import Supplier from "./page/purchase/Supplier";
 import ProductPage from "./page/prouduct/ProductPage";
@@ -34,6 +33,7 @@ import StockHistoryPage from "./page/prouduct/StockHistoryPage";
 import StockDashboardPage from "./page/prouduct/StockDashboardPage";
 import LayoutPos from "./components/layout/LayoutPos";
 import DashboardPage from "./page/DashboardPage";
+import Category from "./page/prouduct/Category";
 
 function App() {
   return (

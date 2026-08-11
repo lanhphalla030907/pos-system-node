@@ -42,21 +42,21 @@ exports.getSummary = async () => {
     customers,
   };
 };
-exports.getSalesChart = async () => {
-  const rows = await dashboardRepository.getSalesChart();
+exports.getSalesChart = async (period = "monthly") => {
+  const rows = await dashboardRepository.getSalesChart(period);
   return rows.map((item) => {
     const sales = Number(item.sales || 0);
     const costOfGoods = Number(item.cost_of_goods || 0);
     return {
-      month: item.month,
+      period: item.period,
       sales,
       cost_of_goods: costOfGoods,
       gross_profit: sales - costOfGoods,
     };
   });
 };
-exports.getProfitChart = async () => {
-  const rows = await dashboardRepository.getProfitChart();
+exports.getProfitChart = async (period = "monthly") => {
+  const rows = await dashboardRepository.getProfitChart(period);
 
   return rows.map((item) => {
     const sales = Number(item.sales || 0);
@@ -67,7 +67,7 @@ exports.getProfitChart = async () => {
     const netProfit = grossProfit - expense;
 
     return {
-      month: item.month,
+      period: item.period,
       sales,
       cost_of_goods: costOfGoods,
       expense,

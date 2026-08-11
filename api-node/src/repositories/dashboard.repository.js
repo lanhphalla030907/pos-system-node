@@ -100,66 +100,130 @@ exports.getCustomers = async () => {
 
   return Number(rows[0].customers);
 };
-exports.getSalesChart = async () => {
+exports.getSalesChart = async (period = "daily") => {
+  let dateFormat;
+
+  switch (period) {
+    case "daily":
+      dateFormat = "%Y-%m-%d";
+      break;
+    case "weekly":
+      dateFormat = "%Y-%u";
+      break;
+    case "monthly":
+      dateFormat = "%Y-%m";
+      break;
+    case "yearly":
+      dateFormat = "%Y";
+      break;
+    default:
+      throw new Error("Invalid period. Use daily, weekly, monthly, or yearly");
+  }
   const sql = `
     SELECT
-      DATE_FORMAT(o.create_at, '%Y-%m') AS month,
+      DATE_FORMAT(o.create_at, '${dateFormat}') AS period,
       SUM(o.total_amount) AS sales,
-      SUM(od.qty * p.cost_price) AS cost_of_goods
+      COALESCE(SUM(cog.cost_of_goods), 0) AS cost_of_goods
+
     FROM orders o
-    JOIN order_detail od ON od.order_id = o.id
-    JOIN product p ON p.id = od.product_id
-    GROUP BY DATE_FORMAT(o.create_at, '%Y-%m')
-    ORDER BY month ASC
+
+    LEFT JOIN (
+      SELECT
+        od.order_id,
+        SUM(od.qty * p.cost_price) AS cost_of_goods
+      FROM order_detail od
+      JOIN product p
+        ON p.id = od.product_id
+      GROUP BY od.order_id
+    ) cog
+      ON cog.order_id = o.id
+
+    GROUP BY DATE_FORMAT(o.create_at, '${dateFormat}')
+    ORDER BY period ASC
   `;
 
   const [rows] = await db.query(sql);
 
   return rows;
 };
-exports.getProfitChart = async () => {
+exports.getProfitChart = async (period = "monthly") => {
+  let dateFormat;
+
+  switch (period) {
+    case "daily":
+      dateFormat = "%Y-%m-%d";
+      break;
+
+    case "weekly":
+      dateFormat = "%Y-%u";
+      break;
+
+    case "monthly":
+      dateFormat = "%Y-%m";
+      break;
+
+    case "yearly":
+      dateFormat = "%Y";
+      break;
+
+    default:
+      throw new Error(
+        "Invalid period. Use daily, weekly, monthly, or yearly"
+      );
+  }
+
   const sql = `
     SELECT
-      months.month,
-
+      periods.period,
       COALESCE(s.sales, 0) AS sales,
       COALESCE(s.cost_of_goods, 0) AS cost_of_goods,
       COALESCE(e.expense, 0) AS expense
 
     FROM (
-      SELECT DISTINCT DATE_FORMAT(create_at, '%Y-%m') AS month
+      SELECT DISTINCT
+        DATE_FORMAT(create_at, '${dateFormat}') AS period
       FROM orders
 
       UNION
 
-      SELECT DISTINCT DATE_FORMAT(create_at, '%Y-%m') AS month
+      SELECT DISTINCT
+        DATE_FORMAT(create_at, '${dateFormat}') AS period
       FROM expense
-    ) AS months
+    ) periods
 
     LEFT JOIN (
       SELECT
-        DATE_FORMAT(o.create_at, '%Y-%m') AS month,
+        DATE_FORMAT(o.create_at, '${dateFormat}') AS period,
         SUM(o.total_amount) AS sales,
-        SUM(od.qty * p.cost_price) AS cost_of_goods
+        COALESCE(SUM(cog.cost_of_goods), 0) AS cost_of_goods
+
       FROM orders o
-      JOIN order_detail od
-        ON od.order_id = o.id
-      JOIN product p
-        ON p.id = od.product_id
-      GROUP BY DATE_FORMAT(o.create_at, '%Y-%m')
-    ) AS s
-      ON s.month = months.month
+
+      LEFT JOIN (
+        SELECT
+          od.order_id,
+          SUM(od.qty * p.cost_price) AS cost_of_goods
+        FROM order_detail od
+        JOIN product p
+          ON p.id = od.product_id
+        GROUP BY od.order_id
+      ) cog
+        ON cog.order_id = o.id
+
+      GROUP BY DATE_FORMAT(o.create_at, '${dateFormat}')
+    ) s
+      ON s.period = periods.period
 
     LEFT JOIN (
       SELECT
-        DATE_FORMAT(create_at, '%Y-%m') AS month,
+        DATE_FORMAT(create_at, '${dateFormat}') AS period,
         SUM(amount) AS expense
       FROM expense
-      GROUP BY DATE_FORMAT(create_at, '%Y-%m')
-    ) AS e
-      ON e.month = months.month
+      GROUP BY DATE_FORMAT(create_at, '${dateFormat}')
+    ) e
+      ON e.period = periods.period
 
-    ORDER BY months.month ASC
+    ORDER BY periods.period ASC
   `;
 
   const [rows] = await db.query(sql);

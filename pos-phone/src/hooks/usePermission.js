@@ -19,7 +19,7 @@ const usePermission = () => {
     total: 0,
     page: 1,
     limit: 10,
-    totalPages: 0,
+    totalPages: 1,
   });
 
   // Load all permissions
@@ -27,12 +27,16 @@ const usePermission = () => {
     try {
       setLoading(true);
       const res = await getPermissions(filter);
-
       if (res && res.data) {
         if (res.data.data && Array.isArray(res.data.data)) {
           setPermissions(res.data.data);
           if (res.data.pagination) {
-            setPagination(res.data.pagination);
+            setPagination({
+              total: res.data.pagination.total || 0,
+              page: res.data.pagination.page || 1,
+              limit: res.data.pagination.limit || 10,
+              totalPages: res.data.pagination.totalPages || 1,
+            });
           }
         } else if (Array.isArray(res.data)) {
           setPermissions(res.data);

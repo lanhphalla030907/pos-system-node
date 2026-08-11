@@ -80,7 +80,7 @@ const OrderPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50">
       <div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -90,7 +90,7 @@ const OrderPage = () => {
           </div>
           <button
             onClick={() => loadOrders(filter)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-950 transition flex items-center gap-2"
             disabled={loading}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

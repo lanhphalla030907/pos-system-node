@@ -10,6 +10,7 @@ import CheckoutModal from '../components/pos/CheckoutModal';
 import Receipt from '../components/pos/Receipt';
 import { prepareOrderItems, calculateCartTotals } from '../util/cartHelpers';
 import { FiRefreshCw, FiShoppingCart } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
 
 const PosPage = () => {
   const { products, loading, loadProducts, refreshStock } = useProduct();
@@ -239,6 +240,9 @@ const PosPage = () => {
               {selectedCustomer.name}
             </span>
           )}
+          <Link to="/today-sale">
+          <button className=' px-2 sm:px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-600 text-xs sm:text-sm font-medium rounded-lg border border-gray-200 transition-colors' >Today's Order</button>
+          </Link>
           <button
             onClick={() => loadProducts({ page: 1, limit: 100 })}
             className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-600 text-xs sm:text-sm font-medium rounded-lg border border-gray-200 transition-colors"

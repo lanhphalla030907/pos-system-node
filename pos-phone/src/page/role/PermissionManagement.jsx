@@ -15,14 +15,11 @@ import {
   FiCheckCircle,
   FiGrid,
   FiKey,
-  FiChevronRight,
-  FiChevronDown,
-  FiUserCheck,
-  FiUserX,
 } from "react-icons/fi";
 import usePermission from "../../hooks/usePermission";
 import useRole from "../../hooks/useRole";
 import Table from "../../components/ui/Table";
+import ProductPagination from "../../components/product/ProductPagination";
 
 const PermissionManagement = () => {
   const {
@@ -49,6 +46,7 @@ const PermissionManagement = () => {
   const [selectedPermissionIds, setSelectedPermissionIds] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -60,23 +58,31 @@ const PermissionManagement = () => {
   const [submitError, setSubmitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Load roles on mount
   useEffect(() => {
-    loadPermissions({ page: currentPage, limit: 10 });
     loadRoles();
   }, []);
 
+  // Load permissions when search, page, or limit changes
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const loadData = () => {
       loadPermissions({
         search: searchTerm,
-        page: 1,
-        limit: 10,
+        page: currentPage,
+        limit,
       });
-      setCurrentPage(1);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+    };
 
+    // Debounce only for search
+    if (searchTerm) {
+      const timer = setTimeout(loadData, 400);
+      return () => clearTimeout(timer);
+    } else {
+      loadData();
+    }
+  }, [searchTerm, currentPage, limit]);
+
+  // Load role permissions when selected role changes
   useEffect(() => {
     if (selectedRole) {
       loadRolePermissions(selectedRole.id);
@@ -144,7 +150,7 @@ const PermissionManagement = () => {
           description: "",
           create_by: 1,
         });
-        await loadPermissions({ page: currentPage, limit: 10 });
+        await loadPermissions({ page: currentPage, limit });
         setTimeout(() => {
           setShowModal(false);
           setEditingPermission(null);
@@ -185,7 +191,7 @@ const PermissionManagement = () => {
 
     try {
       await remove(id);
-      await loadPermissions({ page: currentPage, limit: 10 });
+      await loadPermissions({ page: currentPage, limit });
       setSuccessMessage("Permission deleted successfully!");
       setTimeout(() => setSuccessMessage(""), 2000);
     } catch (error) {
@@ -207,6 +213,17 @@ const PermissionManagement = () => {
     setFormErrors({});
     setSubmitError("");
     setSuccessMessage("");
+  };
+
+  // Handle page change from pagination
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setCurrentPage(1);
   };
 
   const handleAssignPermissions = async () => {
@@ -261,7 +278,7 @@ const PermissionManagement = () => {
       width: "60px",
       render: (row, index) => (
         <span className="text-xs text-gray-400 font-mono">
-          {String(index + 1).padStart(2, "0")}
+          {String(((currentPage - 1) * limit) + index + 1).padStart(2, "0")}
         </span>
       ),
     },
@@ -353,7 +370,7 @@ const PermissionManagement = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
@@ -386,7 +403,7 @@ const PermissionManagement = () => {
             New Permission
           </button>
           <button
-            onClick={() => loadPermissions({ page: currentPage, limit: 10 })}
+            onClick={() => loadPermissions({ page: currentPage, limit })}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
           >
             <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -446,6 +463,19 @@ const PermissionManagement = () => {
               {pagination?.total || permissions.length || 0} permissions found
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={limit}
+              onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+              className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-black/10 focus:border-black outline-none"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
         </div>
 
         <Table
@@ -454,9 +484,20 @@ const PermissionManagement = () => {
           loading={loading}
           emptyMessage="No permissions found"
         />
+
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 0 && (
+          <ProductPagination
+            currentPage={pagination.page || currentPage}
+            totalPages={pagination.totalPages || 1}
+            totalItems={pagination.total || 0}
+            limit={pagination.limit || limit}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
 
-      {/* Role Permission Assignment - Redesigned */}
+      {/* Role Permission Assignment */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
           <div className="flex items-center justify-between">
@@ -739,7 +780,7 @@ const PermissionManagement = () => {
         </div>
       )}
 
-      {/* Assign Permissions Modal - Redesigned */}
+      {/* Assign Permissions Modal */}
       {showAssignModal && selectedRole && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">

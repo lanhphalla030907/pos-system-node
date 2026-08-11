@@ -14,6 +14,7 @@ export const useDashboard = () => {
   const [recentLogins, setRecentLogins] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [chartPeriod, setChartPeriod] = useState('monthly');
 
   // Load dashboard summary
   const loadSummary = useCallback(async () => {
@@ -34,14 +35,15 @@ export const useDashboard = () => {
     }
   }, []);
 
-  // Load sales chart
-  const loadSalesChart = useCallback(async () => {
+  // Load sales chart with period
+  const loadSalesChart = useCallback(async (period = 'monthly') => {
     try {
       setLoading(true);
       setError(null);
-      const res = await getSalesChart();
+      const res = await getSalesChart(period);
       if (res?.success) {
         setSalesChart(res.data || []);
+        setChartPeriod(res.period || period);
       }
       return res;
     } catch (error) {
@@ -54,12 +56,12 @@ export const useDashboard = () => {
     }
   }, []);
 
-  // Load profit chart
-  const loadProfitChart = useCallback(async () => {
+  // Load profit chart with period
+  const loadProfitChart = useCallback(async (period = 'monthly') => {
     try {
       setLoading(true);
       setError(null);
-      const res = await getProfitChart();
+      const res = await getProfitChart(period);
       if (res?.success) {
         setProfitChart(res.data || []);
       }
@@ -94,15 +96,15 @@ export const useDashboard = () => {
     }
   }, []);
 
-  // Load all dashboard data
-  const loadDashboard = useCallback(async () => {
+  // Load all dashboard data with period
+  const loadDashboard = useCallback(async (period = 'monthly') => {
     try {
       setLoading(true);
       setError(null);
       await Promise.all([
         loadSummary(),
-        loadSalesChart(),
-        loadProfitChart(),
+        loadSalesChart(period),
+        loadProfitChart(period),
         loadRecentLogins(10),
       ]);
     } catch (error) {
@@ -112,6 +114,15 @@ export const useDashboard = () => {
       setLoading(false);
     }
   }, [loadSummary, loadSalesChart, loadProfitChart, loadRecentLogins]);
+
+  // Change chart period and reload
+  const changeChartPeriod = useCallback(async (period) => {
+    setChartPeriod(period);
+    await Promise.all([
+      loadSalesChart(period),
+      loadProfitChart(period),
+    ]);
+  }, [loadSalesChart, loadProfitChart]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -124,11 +135,13 @@ export const useDashboard = () => {
     recentLogins,
     loading,
     error,
+    chartPeriod,
     loadSummary,
     loadSalesChart,
     loadProfitChart,
     loadRecentLogins,
     loadDashboard,
+    changeChartPeriod,
     clearError,
   };
 };

@@ -173,7 +173,7 @@ const ProductPage = () => {
   const outOfStock = products.filter((p) => parseInt(p.qty) === 0).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>

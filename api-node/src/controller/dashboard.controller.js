@@ -20,14 +20,28 @@ exports.getSummary = async (req, res) => {
 };
 exports.getSalesChart = async (req, res) => {
   try {
-    const data = await dashboardService.getSalesChart();
+    const period = req.query.period || "monthly";
+
+    const allowedPeriods = ["daily", "weekly", "monthly", "yearly"];
+
+    if (!allowedPeriods.includes(period)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid period. Use daily, weekly, monthly, or yearly",
+      });
+    }
+
+    const data = await dashboardService.getSalesChart(period);
+
     res.json({
       success: true,
       message: "Get sales chart successfully",
+      period,
       data,
     });
   } catch (err) {
     console.error("Sales chart error:", err);
+
     res.status(500).json({
       success: false,
       message: err.message,
@@ -36,11 +50,23 @@ exports.getSalesChart = async (req, res) => {
 };
 exports.getProfitChart = async (req, res) => {
   try {
-    const data = await dashboardService.getProfitChart();
+    const period = req.query.period || "monthly";
+
+    const allowedPeriods = ["daily", "weekly", "monthly", "yearly"];
+
+    if (!allowedPeriods.includes(period)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid period. Use daily, weekly, monthly, or yearly",
+      });
+    }
+
+    const data = await dashboardService.getProfitChart(period);
 
     res.json({
       success: true,
       message: "Get profit chart successfully",
+      period,
       data,
     });
   } catch (err) {
