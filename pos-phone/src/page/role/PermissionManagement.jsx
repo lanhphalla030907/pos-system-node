@@ -1,4 +1,4 @@
-// pages/PermissionManagement.jsx
+// pages/PermissionManagement.jsx - With Alert & Confirm Modal
 import React, { useEffect, useState } from "react";
 import {
   FiRefreshCw,
@@ -15,11 +15,17 @@ import {
   FiCheckCircle,
   FiGrid,
   FiKey,
+  FiChevronRight,
+  FiChevronDown,
+  FiUserCheck,
 } from "react-icons/fi";
 import usePermission from "../../hooks/usePermission";
 import useRole from "../../hooks/useRole";
 import Table from "../../components/ui/Table";
 import ProductPagination from "../../components/product/ProductPagination";
+import { useAlert } from "../../components/common/Alert";
+import { useConfirm } from "../../hooks/useConfirm";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 const PermissionManagement = () => {
   const {
@@ -37,6 +43,9 @@ const PermissionManagement = () => {
     removePermission,
   } = usePermission();
 
+  const alert = useAlert();
+  const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
+
   const { roles, loadRoles } = useRole();
 
   const [showModal, setShowModal] = useState(false);
@@ -47,6 +56,8 @@ const PermissionManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [assignSearchTerm, setAssignSearchTerm] = useState("");
+  
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -55,8 +66,6 @@ const PermissionManagement = () => {
     create_by: 1,
   });
   const [formErrors, setFormErrors] = useState({});
-  const [submitError, setSubmitError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
   // Load roles on mount
   useEffect(() => {
@@ -73,7 +82,6 @@ const PermissionManagement = () => {
       });
     };
 
-    // Debounce only for search
     if (searchTerm) {
       const timer = setTimeout(loadData, 400);
       return () => clearTimeout(timer);
@@ -98,8 +106,6 @@ const PermissionManagement = () => {
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: "" });
     }
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
   const validateForm = () => {
@@ -117,10 +123,16 @@ const PermissionManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setSubmitError("");
-    setSuccessMessage("");
 
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: editingPermission ? 'Updating permission...' : 'Creating permission...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       const permissionData = {
         name: formData.name.trim(),
         code: formData.code.trim().toLowerCase(),
@@ -132,15 +144,11 @@ const PermissionManagement = () => {
       let result;
       if (editingPermission) {
         result = await update(editingPermission.id, permissionData);
-        if (result) {
-          setSuccessMessage("Permission updated successfully!");
-        }
       } else {
         result = await create(permissionData);
-        if (result) {
-          setSuccessMessage("Permission created successfully!");
-        }
       }
+
+      alert.hideAlert(loadingId);
 
       if (result) {
         setFormData({
@@ -151,15 +159,20 @@ const PermissionManagement = () => {
           create_by: 1,
         });
         await loadPermissions({ page: currentPage, limit });
-        setTimeout(() => {
-          setShowModal(false);
-          setEditingPermission(null);
-          setSuccessMessage("");
-        }, 1500);
+        alert.success(
+          editingPermission ? "Permission updated successfully!" : "Permission created successfully!",
+          {
+            description: `"${formData.name}" has been ${editingPermission ? 'updated' : 'added'}.`,
+          }
+        );
+        setShowModal(false);
+        setEditingPermission(null);
       }
     } catch (err) {
       console.error("Error saving permission:", err);
-      setSubmitError(err.message || "An error occurred");
+      alert.error("Failed to save permission", {
+        description: err.message || "Please try again.",
+      });
     }
   };
 
@@ -177,26 +190,51 @@ const PermissionManagement = () => {
         });
         setShowModal(true);
         setFormErrors({});
-        setSubmitError("");
-        setSuccessMessage("");
       }
     } catch (error) {
       console.error("Error loading permission:", error);
-      setSubmitError("Failed to load permission details");
+      alert.error("Failed to load permission details", {
+        description: error.message || "Please try again.",
+      });
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this permission?")) return;
+  const handleDelete = async (id, name) => {
+    const confirmed = await showConfirm({
+      title: "Delete Permission",
+      message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      confirmText: "Delete Permission",
+      cancelText: "Cancel",
+      type: "danger",
+      icon: FiTrash2,
+    });
 
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: `Deleting "${name}"...`,
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       await remove(id);
       await loadPermissions({ page: currentPage, limit });
-      setSuccessMessage("Permission deleted successfully!");
-      setTimeout(() => setSuccessMessage(""), 2000);
+
+      alert.hideAlert(loadingId);
+      alert.success("Permission deleted successfully!", {
+        description: `"${name}" has been removed.`,
+      });
     } catch (error) {
       console.error("Error deleting permission:", error);
-      setSubmitError(error.message || "Failed to delete permission");
+      alert.error("Failed to delete permission", {
+        description: error.message || "Please try again.",
+      });
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -211,16 +249,12 @@ const PermissionManagement = () => {
       create_by: 1,
     });
     setFormErrors({});
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
-  // Handle page change from pagination
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
 
-  // Handle limit change
   const handleLimitChange = (newLimit) => {
     setLimit(newLimit);
     setCurrentPage(1);
@@ -230,30 +264,68 @@ const PermissionManagement = () => {
     if (!selectedRole) return;
 
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: 'Assigning permissions...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       await assignPermissions(selectedRole.id, selectedPermissionIds);
       await loadRolePermissions(selectedRole.id);
+
+      alert.hideAlert(loadingId);
       setSelectedPermissionIds([]);
-      setSuccessMessage("Permissions assigned successfully!");
-      setTimeout(() => setSuccessMessage(""), 2000);
+      alert.success("Permissions assigned successfully!", {
+        description: `${selectedPermissionIds.length} permissions assigned to ${selectedRole.name}.`,
+      });
       setShowAssignModal(false);
+      setAssignSearchTerm("");
     } catch (error) {
       console.error("Error assigning permissions:", error);
-      setSubmitError(error.message || "Failed to assign permissions");
+      alert.error("Failed to assign permissions", {
+        description: error.message || "Please try again.",
+      });
     }
   };
 
-  const handleRemovePermission = async (permissionId) => {
-    if (!selectedRole) return;
-    if (!window.confirm("Remove this permission from the role?")) return;
+  const handleRemovePermission = async (permissionId, permissionName) => {
+    const confirmed = await showConfirm({
+      title: "Remove Permission",
+      message: `Are you sure you want to remove "${permissionName}" from ${selectedRole?.name}?`,
+      confirmText: "Remove",
+      cancelText: "Cancel",
+      type: "warning",
+      icon: FiX,
+    });
 
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: `Removing "${permissionName}"...`,
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       await removePermission(selectedRole.id, permissionId);
       await loadRolePermissions(selectedRole.id);
-      setSuccessMessage("Permission removed successfully!");
-      setTimeout(() => setSuccessMessage(""), 2000);
+
+      alert.hideAlert(loadingId);
+      alert.success("Permission removed successfully!", {
+        description: `"${permissionName}" has been removed from ${selectedRole?.name}.`,
+      });
     } catch (error) {
       console.error("Error removing permission:", error);
-      setSubmitError(error.message || "Failed to remove permission");
+      alert.error("Failed to remove permission", {
+        description: error.message || "Please try again.",
+      });
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -269,16 +341,24 @@ const PermissionManagement = () => {
     return rolePermissions.some((p) => p.id === permissionId);
   };
 
+  // Filter permissions for assign modal
+  const filteredAssignPermissions = permissions.filter(p => 
+    !assignSearchTerm || 
+    p.name.toLowerCase().includes(assignSearchTerm.toLowerCase()) ||
+    p.code.toLowerCase().includes(assignSearchTerm.toLowerCase()) ||
+    p.module.toLowerCase().includes(assignSearchTerm.toLowerCase())
+  );
+
   const uniqueModules = [...new Set(permissions.map((p) => p.module))];
 
   const columns = [
     {
       key: "id",
       title: "#",
-      width: "60px",
+      width: "50px",
       render: (row, index) => (
-        <span className="text-xs text-gray-400 font-mono">
-          {String(((currentPage - 1) * limit) + index + 1).padStart(2, "0")}
+        <span className="text-xs text-gray-400">
+          {String(((currentPage - 1) * limit) + index + 1)}
         </span>
       ),
     },
@@ -287,12 +367,12 @@ const PermissionManagement = () => {
       title: "Permission",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-700">
+          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
             <FiKey className="w-4 h-4" />
           </div>
           <div>
             <p className="text-sm font-medium text-gray-800">{row.name}</p>
-            <p className="text-xs text-gray-400 font-mono">{row.code}</p>
+            <p className="text-xs text-gray-400">{row.code}</p>
           </div>
         </div>
       ),
@@ -300,9 +380,9 @@ const PermissionManagement = () => {
     {
       key: "module",
       title: "Module",
-      width: "130px",
+      width: "120px",
       render: (row) => (
-        <span className="inline-flex px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+        <span className="inline-flex px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
           {row.module}
         </span>
       ),
@@ -319,7 +399,7 @@ const PermissionManagement = () => {
     {
       key: "actions",
       title: "",
-      width: "100px",
+      width: "80px",
       align: "right",
       render: (row) => (
         <div className="flex items-center justify-end gap-1">
@@ -331,7 +411,7 @@ const PermissionManagement = () => {
             <FiEdit2 className="w-4 h-4" />
           </button>
           <button
-            onClick={() => handleDelete(row.id)}
+            onClick={() => handleDelete(row.id, row.name)}
             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Delete"
           >
@@ -342,318 +422,276 @@ const PermissionManagement = () => {
     },
   ];
 
+  // Stats
   const stats = [
     {
       label: "Total Permissions",
       value: pagination?.total || permissions.length || 0,
       icon: FiShield,
-      bgColor: "bg-gray-100",
-      textColor: "text-gray-700",
-      subtitle: "System permissions",
+      color: "text-gray-700",
     },
     {
       label: "Modules",
       value: uniqueModules.length,
       icon: FiGrid,
-      bgColor: "bg-gray-100",
-      textColor: "text-gray-700",
-      subtitle: "Unique modules",
+      color: "text-blue-600",
     },
     {
       label: "Roles",
       value: roles?.length || 0,
       icon: FiUsers,
-      bgColor: "bg-gray-100",
-      textColor: "text-gray-700",
-      subtitle: "Available roles",
+      color: "text-purple-600",
     },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800 tracking-tight">
-            Permission Management
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Manage system permissions and role assignments
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              setEditingPermission(null);
-              setFormData({
-                name: "",
-                code: "",
-                module: "",
-                description: "",
-                create_by: 1,
-              });
-              setShowModal(true);
-              setFormErrors({});
-              setSubmitError("");
-              setSuccessMessage("");
-            }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all shadow-sm"
-          >
-            <FiPlus className="w-4 h-4" />
-            New Permission
-          </button>
-          <button
-            onClick={() => loadPermissions({ page: currentPage, limit })}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
-          >
-            <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={index}
-              className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 font-medium">
-                    {stat.label}
-                  </p>
-                  <p className="text-2xl font-semibold text-gray-800 mt-1">
-                    {stat.value}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">{stat.subtitle}</p>
+      <div>
+        {/* Header */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-6 hover:shadow-md transition-shadow">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center">
+                  <FiShield className="w-5 h-5 text-white" />
                 </div>
-                <div className={`w-11 h-11 rounded-lg ${stat.bgColor} flex items-center justify-center ${stat.textColor}`}>
-                  <Icon className="w-5 h-5" />
+                Permission Management
+              </h1>
+              <p className="text-sm text-gray-500 mt-1 ml-14">
+                Manage system permissions and role assignments
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingPermission(null);
+                setFormData({
+                  name: "",
+                  code: "",
+                  module: "",
+                  description: "",
+                  create_by: 1,
+                });
+                setShowModal(true);
+                setFormErrors({});
+              }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg transition-all shadow-sm"
+            >
+              <FiPlus className="w-4 h-4" />
+              New Permission
+            </button>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={index}
+                className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
+                    <Icon className={`w-6 h-6 ${stat.color}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">{stat.label}</p>
+                    <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Search */}
-      <div className="mb-6">
-        <div className="relative max-w-sm">
-          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search permissions..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
-          />
-        </div>
-      </div>
-
-      {/* Permissions Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm mb-6">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
-          <div>
-            <h2 className="text-sm font-medium text-gray-700">Permission List</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {pagination?.total || permissions.length || 0} permissions found
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={limit}
-              onChange={(e) => handleLimitChange(parseInt(e.target.value))}
-              className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:ring-2 focus:ring-black/10 focus:border-black outline-none"
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-          </div>
+            );
+          })}
         </div>
 
-        <Table
-          columns={columns}
-          data={permissions}
-          loading={loading}
-          emptyMessage="No permissions found"
-        />
+        {/* Main Content - Two Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Permissions List */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              {/* Toolbar */}
+              <div className="p-4 border-b border-gray-200 bg-gray-50/50">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search permissions..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 outline-none transition-all bg-white"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 ml-auto">
+                    <select
+                      value={limit}
+                      onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+                      className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 outline-none"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                    <button
+                      onClick={() => {
+                        loadPermissions({ page: currentPage, limit });
+                        alert.success("Permissions refreshed!", {
+                          description: "Data has been updated.",
+                          duration: 2000,
+                        });
+                      }}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Refresh"
+                    >
+                      <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-        {/* Pagination */}
-        {pagination && pagination.totalPages > 0 && (
-          <ProductPagination
-            currentPage={pagination.page || currentPage}
-            totalPages={pagination.totalPages || 1}
-            totalItems={pagination.total || 0}
-            limit={pagination.limit || limit}
-            onPageChange={handlePageChange}
-          />
-        )}
-      </div>
+              {/* Table */}
+              <Table
+                columns={columns}
+                data={permissions}
+                loading={loading}
+                emptyMessage="No permissions found"
+              />
 
-      {/* Role Permission Assignment */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-medium text-gray-700">Role Permissions</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Assign and manage permissions for roles</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setSelectedRole(null);
-                  setSelectedPermissionIds([]);
-                }}
-                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                Clear selection
-              </button>
+              {/* Pagination */}
+              {pagination && pagination.totalPages > 0 && (
+                <ProductPagination
+                  currentPage={pagination.page || currentPage}
+                  totalPages={pagination.totalPages || 1}
+                  totalItems={pagination.total || 0}
+                  limit={pagination.limit || limit}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </div>
           </div>
-        </div>
 
-        <div className="p-6">
-          {/* Role Selection Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
-            {roles.map((role) => {
-              const isSelected = selectedRole?.id === role.id;
-              const assignedCount = rolePermissions.filter(p => 
-                selectedRole?.id === role.id && isPermissionAssigned(p.id)
-              ).length;
-              
-              return (
-                <button
-                  key={role.id}
-                  onClick={() => {
-                    setSelectedRole(role);
-                    setSelectedPermissionIds([]);
-                  }}
-                  className={`relative p-4 rounded-lg border-2 text-left transition-all ${
-                    isSelected
-                      ? "border-black bg-gray-50 shadow-sm"
-                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isSelected ? "bg-black text-white" : "bg-gray-100 text-gray-600"
-                      }`}>
-                        <FiUsers className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className={`font-medium ${
-                          isSelected ? "text-black" : "text-gray-700"
-                        }`}>
-                          {role.name}
-                        </h3>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {assignedCount} permissions assigned
-                        </p>
-                      </div>
+          {/* Right Column - Role Permissions */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden sticky top-6 hover:shadow-md transition-shadow">
+              <div className="p-4 border-b border-gray-200 bg-gray-50/50">
+                <div className="flex items-center gap-2">
+                  <FiUsers className="w-4 h-4 text-gray-500" />
+                  <h2 className="text-sm font-semibold text-gray-700">Role Permissions</h2>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">Select a role to manage</p>
+              </div>
+
+              <div className="p-4">
+                {/* Role List */}
+                <div className="space-y-2 mb-4">
+                  {roles.map((role) => {
+                    const isSelected = selectedRole?.id === role.id;
+                    const assignedCount = rolePermissions.length;
+
+                    return (
+                      <button
+                        key={role.id}
+                        onClick={() => {
+                          setSelectedRole(role);
+                          setSelectedPermissionIds([]);
+                        }}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          isSelected
+                            ? "border-gray-900 bg-gray-50 shadow-sm"
+                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            isSelected ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600"
+                          }`}>
+                            <FiUserCheck className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <p className={`text-sm font-medium ${isSelected ? "text-gray-900" : "text-gray-700"}`}>
+                              {role.name}
+                            </p>
+                            <p className="text-xs text-gray-400">{assignedCount} permissions</p>
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <FiChevronRight className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Selected Role Permissions */}
+                {selectedRole ? (
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-medium text-gray-700">
+                        {selectedRole.name}
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setSelectedPermissionIds([]);
+                          setAssignSearchTerm("");
+                          setShowAssignModal(true);
+                        }}
+                        className="text-xs text-white font-medium flex items-center gap-1 bg-gray-800 hover:bg-gray-950 py-1 px-4 rounded-lg "
+                      >
+                        <FiPlus className="w-3 h-3" /> Add
+                      </button>
                     </div>
-                    {isSelected && (
-                      <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center flex-shrink-0 mt-1">
-                        <FiCheck className="w-3 h-3 text-white" />
+
+                    {rolePermissions.length > 0 ? (
+                      <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+                        {rolePermissions.map((permission) => (
+                          <div
+                            key={permission.id}
+                            className="group flex items-center justify-between p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <FiCheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                              <span className="text-sm text-gray-700 truncate">
+                                {permission.name}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleRemovePermission(permission.id, permission.name)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
+                              title="Remove"
+                            >
+                              <FiX className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                        <FiLock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400">No permissions assigned</p>
+                        <p className="text-xs text-gray-300 mt-1">Click Add to assign</p>
                       </div>
                     )}
                   </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {selectedRole ? (
-            <div className="border-t border-gray-200 pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-800 flex items-center gap-2">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {selectedRole.name} Permissions
-                  </h4>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {rolePermissions.length} permissions assigned
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedPermissionIds([]);
-                    setShowAssignModal(true);
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all shadow-sm"
-                >
-                  <FiPlus className="w-4 h-4" />
-                  Add Permissions
-                </button>
-              </div>
-
-              {rolePermissions.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {rolePermissions.map((permission) => (
-                    <div
-                      key={permission.id}
-                      className="group flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-all"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
-                          <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-700 truncate">
-                            {permission.name}
-                          </p>
-                          <p className="text-xs text-gray-400 truncate">
-                            {permission.code}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRemovePermission(permission.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all flex-shrink-0 ml-2"
-                        title="Remove permission"
-                      >
-                        <FiX className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
-                  <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <FiLock className="w-6 h-6 text-gray-400" />
+                ) : (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                    <FiUsers className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-400">Select a role</p>
+                    <p className="text-xs text-gray-300 mt-1">Choose a role to manage its permissions</p>
                   </div>
-                  <p className="text-sm text-gray-400 font-medium">No permissions assigned</p>
-                  <p className="text-xs text-gray-300 mt-1">
-                    Click "Add Permissions" to assign permissions to {selectedRole.name}
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <FiUsers className="w-8 h-8 text-gray-300" />
+                )}
               </div>
-              <p className="text-sm text-gray-400 font-medium">Select a role to manage permissions</p>
-              <p className="text-xs text-gray-300 mt-1">
-                Choose a role from the cards above to view and assign permissions
-              </p>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Add/Edit Permission Modal */}
+      {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">
@@ -671,101 +709,85 @@ const PermissionManagement = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {successMessage && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3.5 flex items-start gap-3">
-                  <FiCheck className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-emerald-700">{successMessage}</p>
-                </div>
-              )}
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 outline-none transition-all bg-white ${
+                    formErrors.name ? "border-red-400" : "border-gray-200"
+                  }`}
+                  placeholder="e.g., Create User"
+                />
+                {formErrors.name && (
+                  <p className="mt-1 text-xs text-red-500">{formErrors.name}</p>
+                )}
+              </div>
 
-              {submitError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3.5 flex items-start gap-3">
-                  <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{submitError}</p>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="code"
+                  value={formData.code}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 outline-none transition-all bg-white ${
+                    formErrors.code ? "border-red-400" : "border-gray-200"
+                  }`}
+                  placeholder="e.g., user.create"
+                />
+                {formErrors.code && (
+                  <p className="mt-1 text-xs text-red-500">{formErrors.code}</p>
+                )}
+                <p className="mt-1 text-xs text-gray-400">Lowercase letters, numbers, underscores, and dots</p>
+              </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Permission Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white ${
-                      formErrors.name ? "border-red-400" : "border-gray-200"
-                    }`}
-                    placeholder="e.g., Create User"
-                  />
-                  {formErrors.name && (
-                    <p className="mt-1.5 text-xs text-red-500">{formErrors.name}</p>
-                  )}
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Module <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="module"
+                  value={formData.module}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 outline-none transition-all bg-white ${
+                    formErrors.module ? "border-red-400" : "border-gray-200"
+                  }`}
+                  placeholder="e.g., User, Role, Product"
+                />
+                {formErrors.module && (
+                  <p className="mt-1 text-xs text-red-500">{formErrors.module}</p>
+                )}
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Permission Code <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="code"
-                    value={formData.code}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white ${
-                      formErrors.code ? "border-red-400" : "border-gray-200"
-                    }`}
-                    placeholder="e.g., user.create"
-                  />
-                  {formErrors.code && (
-                    <p className="mt-1.5 text-xs text-red-500">{formErrors.code}</p>
-                  )}
-                  <p className="mt-1 text-xs text-gray-400">Lowercase letters, numbers, underscores, and dots only</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Module <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="module"
-                    value={formData.module}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white ${
-                      formErrors.module ? "border-red-400" : "border-gray-200"
-                    }`}
-                    placeholder="e.g., User, Role, Product"
-                  />
-                  {formErrors.module && (
-                    <p className="mt-1.5 text-xs text-red-500">{formErrors.module}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white resize-none"
-                    placeholder="Optional description"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows="2"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 outline-none transition-all bg-white resize-none"
+                  placeholder="Optional description"
+                />
               </div>
 
               <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all shadow-sm"
+                  className="flex-1 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all shadow-sm"
                 >
-                  {editingPermission ? "Update Permission" : "Create Permission"}
+                  {editingPermission ? "Update" : "Create"}
                 </button>
                 <button
                   type="button"
@@ -783,20 +805,19 @@ const PermissionManagement = () => {
       {/* Assign Permissions Modal */}
       {showAssignModal && selectedRole && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">
                   Add Permissions to {selectedRole.name}
                 </h3>
-                <p className="text-sm text-gray-500">
-                  Select permissions to assign to this role
-                </p>
+                <p className="text-sm text-gray-500">Select permissions to assign</p>
               </div>
               <button
                 onClick={() => {
                   setShowAssignModal(false);
                   setSelectedPermissionIds([]);
+                  setAssignSearchTerm("");
                 }}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
@@ -804,31 +825,37 @@ const PermissionManagement = () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              {submitError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3.5 flex items-start gap-3">
-                  <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{submitError}</p>
-                </div>
-              )}
-
-              {/* Search within modal */}
-              <div className="relative">
+            <div className="p-6">
+              {/* Search */}
+              <div className="relative mb-4">
                 <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Filter permissions..."
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+                  placeholder="Search permissions..."
+                  value={assignSearchTerm}
+                  onChange={(e) => setAssignSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 outline-none transition-all bg-white"
                 />
+                {assignSearchTerm && (
+                  <button
+                    onClick={() => setAssignSearchTerm("")}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <FiX className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
-              <div className="space-y-2 max-h-[350px] overflow-y-auto">
-                {permissions.length === 0 ? (
+              {/* Permission List */}
+              <div className="space-y-1.5 max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg p-2">
+                {filteredAssignPermissions.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-sm text-gray-400">No permissions available</p>
+                    <p className="text-sm text-gray-400">
+                      {assignSearchTerm ? "No permissions found" : "No permissions available"}
+                    </p>
                   </div>
                 ) : (
-                  permissions.map((permission) => {
+                  filteredAssignPermissions.map((permission) => {
                     const isAssigned = isPermissionAssigned(permission.id);
                     const isSelected = selectedPermissionIds.includes(permission.id);
                     
@@ -839,7 +866,7 @@ const PermissionManagement = () => {
                           isAssigned
                             ? "bg-gray-50 border-gray-200 cursor-not-allowed opacity-60"
                             : isSelected
-                            ? "bg-gray-100 border-gray-300 ring-1 ring-black"
+                            ? "bg-gray-100 border-gray-900 ring-1 ring-gray-900"
                             : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                         }`}
                       >
@@ -852,7 +879,7 @@ const PermissionManagement = () => {
                             }
                           }}
                           disabled={isAssigned}
-                          className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                          className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -861,11 +888,11 @@ const PermissionManagement = () => {
                               {permission.module}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-400 font-mono mt-0.5">{permission.code}</p>
+                          <p className="text-xs text-gray-400">{permission.code}</p>
                         </div>
                         {isAssigned && (
-                          <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded">
-                            <FiCheck className="w-3 h-3" /> Assigned
+                          <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded">
+                            <FiCheck className="w-3 h-3 inline mr-1" /> Assigned
                           </span>
                         )}
                       </label>
@@ -874,15 +901,17 @@ const PermissionManagement = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
                 <span className="text-sm text-gray-500">
-                  {selectedPermissionIds.length} permissions selected
+                  {selectedPermissionIds.length} selected
                 </span>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => {
                       setShowAssignModal(false);
                       setSelectedPermissionIds([]);
+                      setAssignSearchTerm("");
                     }}
                     className="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
                   >
@@ -893,7 +922,7 @@ const PermissionManagement = () => {
                     disabled={selectedPermissionIds.length === 0}
                     className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all ${
                       selectedPermissionIds.length > 0
-                        ? "bg-black hover:bg-gray-800 text-white shadow-sm"
+                        ? "bg-gray-900 hover:bg-gray-800 text-white shadow-sm"
                         : "bg-gray-100 text-gray-400 cursor-not-allowed"
                     }`}
                   >
@@ -905,6 +934,20 @@ const PermissionManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={config.isOpen}
+        onClose={config.onCancel || (() => {})}
+        onConfirm={config.onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        icon={config.icon}
+        loading={config.loading}
+      />
     </div>
   );
 };

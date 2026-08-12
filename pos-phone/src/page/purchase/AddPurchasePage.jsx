@@ -1,15 +1,18 @@
-// pages/AddPurchasePage.jsx
+// pages/AddPurchasePage.jsx - Only Alert, No Confirm Modal
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { formatCurrency } from '../../util/orderHelper';
 import useProduct from '../../hooks/useProduct';
 import useSupplier from '../../hooks/useSupplier';
 import { usePurchase } from '../../hooks/usePurchase';
+import { useAlert } from '../../components/common/Alert';
 
 const AddPurchasePage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+
+  const alert = useAlert();
 
   const { addPurchase, editPurchase, loadPurchaseById, loading } = usePurchase();
   const { suppliers, loadSuppliers } = useSupplier();
@@ -70,7 +73,9 @@ const AddPurchasePage = () => {
       }
     } catch (error) {
       console.error('Error loading purchase:', error);
-      alert('Failed to load purchase data');
+      alert.error('Failed to load purchase data', {
+        description: 'Please try again.',
+      });
     }
   };
 
@@ -89,23 +94,31 @@ const AddPurchasePage = () => {
   // Add item to list
   const handleAddItem = () => {
     if (!selectedProduct) {
-      alert('Please select a product');
+      alert.warning('Please select a product', {
+        description: 'Choose a product from the list.',
+      });
       return;
     }
 
     if (itemQty <= 0) {
-      alert('Quantity must be greater than 0');
+      alert.warning('Quantity must be greater than 0', {
+        description: 'Please enter a valid quantity.',
+      });
       return;
     }
 
     if (itemCost < 0) {
-      alert('Cost cannot be negative');
+      alert.warning('Cost cannot be negative', {
+        description: 'Please enter a valid cost.',
+      });
       return;
     }
 
     const existingItem = items.find(item => item.product_id === selectedProduct.id);
     if (existingItem) {
-      alert('Product already added. Please update quantity in the list.');
+      alert.warning('Product already added', {
+        description: 'Please update quantity in the list.',
+      });
       return;
     }
 
@@ -122,6 +135,10 @@ const AddPurchasePage = () => {
 
     setItems([...items, newItem]);
     resetItemForm();
+    alert.success('Item added successfully!', {
+      description: `"${selectedProduct.name}" has been added to the list.`,
+      duration: 2000,
+    });
   };
 
   // Reset item form
@@ -135,9 +152,20 @@ const AddPurchasePage = () => {
 
   // Remove item from list
   const handleRemoveItem = (index) => {
+    const item = items[index];
+    
+    // ប្រើ window.confirm ធម្មតា
+    if (!window.confirm(`Are you sure you want to remove "${item.product_name}"?`)) {
+      return;
+    }
+
     const newItems = [...items];
     newItems.splice(index, 1);
     setItems(newItems);
+    alert.success('Item removed successfully!', {
+      description: `"${item.product_name}" has been removed.`,
+      duration: 2000,
+    });
   };
 
   // Update item quantity
@@ -175,6 +203,9 @@ const AddPurchasePage = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      alert.warning('Please fix the errors', {
+        description: Object.values(newErrors)[0],
+      });
       return;
     }
 
@@ -198,31 +229,44 @@ const AddPurchasePage = () => {
       })),
     };
 
-    let res;
-    if (isEdit) {
-      res = await editPurchase(id, purchaseData);
-    } else {
-      res = await addPurchase(purchaseData);
+    try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: isEdit ? 'Updating purchase...' : 'Creating purchase...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
+      let res;
+      if (isEdit) {
+        res = await editPurchase(id, purchaseData);
+      } else {
+        res = await addPurchase(purchaseData);
+      }
+
+      alert.hideAlert(loadingId);
+
+      if (res?.success) {
+        alert.success(
+          isEdit ? 'Purchase updated successfully!' : 'Purchase created successfully!',
+          {
+            description: `Purchase order has been ${isEdit ? 'updated' : 'created'}.`,
+          }
+        );
+        navigate('/purchases');
+      } else {
+        alert.error('Failed to save purchase', {
+          description: res?.message || 'Please try again.',
+        });
+      }
+    } catch (error) {
+      alert.error('An error occurred while saving', {
+        description: error.message || 'Please try again later.',
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    if (res?.success) {
-      alert(isEdit ? 'Purchase updated successfully!' : 'Purchase created successfully!');
-      navigate('/purchases');
-    } else {
-      alert(res?.message || 'Failed to save purchase');
-    }
-
-    setIsLoading(false);
-  };
-
-  // Get status badge
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      completed: { label: 'Completed', color: 'bg-green-100 text-green-800' },
-      pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
-      cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
-    };
-    return statusMap[status] || statusMap.pending;
   };
 
   return (

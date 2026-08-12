@@ -16,6 +16,9 @@ import {
   FiCheckCircle,
   FiXCircle,
 } from "react-icons/fi";
+import { useAlert } from "../../components/common/Alert";
+import useConfirm from "../../hooks/useConfirm";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 const ProductPage = () => {
   const {
@@ -27,6 +30,9 @@ const ProductPage = () => {
     editProduct,
     removeProduct,
   } = useProduct();
+
+  const alert = useAlert();
+  const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
 
   const [categories, setCategories] = useState([]);
   const [filter, setFilter] = useState({
@@ -126,7 +132,7 @@ const ProductPage = () => {
     setSelectedProduct(null);
   };
 
-  // Handle form submit
+  // Handle form submit with Alert
   const handleSubmit = async (formData) => {
     const data = new FormData();
     Object.keys(formData).forEach((key) => {
@@ -137,30 +143,88 @@ const ProductPage = () => {
       }
     });
 
-    let response;
-    if (isEdit) {
-      response = await editProduct(currentId, data);
-    } else {
-      response = await addProduct(data);
-    }
+    try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: isEdit ? 'Updating product...' : 'Creating product...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
 
-    if (response?.success) {
-      handleModalClose();
-      await loadProducts(filter);
-    } else {
-      alert(response?.message || "Operation failed!");
+      let response;
+      if (isEdit) {
+        response = await editProduct(currentId, data);
+      } else {
+        response = await addProduct(data);
+      }
+
+      alert.hideAlert(loadingId);
+
+      if (response?.success) {
+        handleModalClose();
+        await loadProducts(filter);
+        alert.success(
+          isEdit ? 'Product updated successfully!' : 'Product created successfully!',
+          {
+            description: `"${formData.name}" has been ${isEdit ? 'updated' : 'added'} to the inventory.`,
+          }
+        );
+      } else {
+        alert.error('Failed to save product', {
+          description: response?.message || 'Please try again.',
+        });
+      }
+    } catch (error) {
+      alert.error('An error occurred while saving', {
+        description: error.message || 'Please try again later.',
+      });
     }
   };
 
-  // Handle delete
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      const response = await removeProduct(id);
+  // Handle delete with Confirm Modal
+  const handleDelete = async (product) => {
+    const confirmed = await showConfirm({
+      title: 'Delete Product',
+      message: `Are you sure you want to delete "${product.name}"? This action cannot be undone.`,
+      confirmText: 'Delete Product',
+      cancelText: 'Cancel',
+      type: 'danger',
+      icon: FiXCircle,
+    });
+
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
+    try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: `Deleting "${product.name}"...`,
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
+      const response = await removeProduct(product.id);
+
+      alert.hideAlert(loadingId);
+
       if (response?.success) {
         await loadProducts(filter);
+        alert.success('Product deleted successfully!', {
+          description: `"${product.name}" has been removed from inventory.`,
+        });
       } else {
-        alert(response?.message || "Delete failed!");
+        alert.error('Failed to delete product', {
+          description: response?.message || 'Please try again.',
+        });
       }
+    } catch (error) {
+      alert.error('An error occurred while deleting', {
+        description: error.message || 'Please try again later.',
+      });
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -186,7 +250,13 @@ const ProductPage = () => {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => loadProducts(filter)}
+            onClick={() => {
+              loadProducts(filter);
+              alert.success('Products refreshed!', {
+                description: 'Data has been updated.',
+                duration: 2000,
+              });
+            }}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
           >
             <FiRefreshCw
@@ -206,7 +276,7 @@ const ProductPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
@@ -221,7 +291,7 @@ const ProductPage = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
@@ -236,7 +306,7 @@ const ProductPage = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
@@ -251,7 +321,7 @@ const ProductPage = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
@@ -270,7 +340,7 @@ const ProductPage = () => {
 
       {/* Search and Filter */}
       <div className="mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <ProductSearch value={filter.search} onSearch={handleSearch} />
@@ -287,7 +357,7 @@ const ProductPage = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
         <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
           <div>
             <h2 className="text-sm font-medium text-gray-700">Product List</h2>
@@ -312,8 +382,6 @@ const ProductPage = () => {
           onPageChange={handlePageChange}
         />
       </div>
-
-      {/* Modal */}
       <ProductModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
@@ -321,6 +389,18 @@ const ProductPage = () => {
         isEdit={isEdit}
         selectedProduct={selectedProduct}
         onSubmit={handleSubmit}
+      />
+      <ConfirmModal
+        isOpen={config.isOpen}
+        onClose={config.onCancel || (() => {})}
+        onConfirm={config.onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        icon={config.icon}
+        loading={config.loading}
       />
     </div>
   );

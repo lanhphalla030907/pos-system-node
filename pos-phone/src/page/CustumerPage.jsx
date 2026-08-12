@@ -21,6 +21,9 @@ import {
   FiChevronLeft,
   FiChevronRight,
 } from "react-icons/fi";
+import { useAlert } from "../components/common/Alert";
+import { useConfirm } from "../hooks/useConfirm";
+import ConfirmModal from "../components/common/ConfirmModal";
 
 const CustomerPage = () => {
   const { 
@@ -34,6 +37,9 @@ const CustomerPage = () => {
     pagination,
     summary,
   } = useCustomer();
+
+  const alert = useAlert();
+  const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
 
   const [filter, setFilter] = useState({
     search: "",
@@ -119,38 +125,88 @@ const CustomerPage = () => {
     setIsModalOpen(true);
   };
 
-  // Handle delete customer
+  // Handle delete customer with Confirm Modal
   const handleDeleteClick = async (customer) => {
-    if (window.confirm(`Are you sure you want to delete customer "${customer.name}"?`)) {
+    const confirmed = await showConfirm({
+      title: "Delete Customer",
+      message: `Are you sure you want to delete "${customer.name}"? This action cannot be undone.`,
+      confirmText: "Delete Customer",
+      cancelText: "Cancel",
+      type: "danger",
+      icon: FiTrash2,
+    });
+
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
+    try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: `Deleting "${customer.name}"...`,
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       const res = await removeCustomer(customer.id);
+
+      alert.hideAlert(loadingId);
+
       if (res?.success) {
-        alert("Customer deleted successfully!");
-        loadCustomers(filter);
+        await loadCustomers(filter);
+        alert.success("Customer deleted successfully!", {
+          description: `"${customer.name}" has been removed from the system.`,
+        });
       } else {
-        alert(res?.message || "Failed to delete customer");
+        alert.error("Failed to delete customer", {
+          description: res?.message || "Please try again.",
+        });
       }
+    } catch (error) {
+      alert.error("An error occurred while deleting", {
+        description: error.message || "Please try again later.",
+      });
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
-  // Handle form submit
+  // Handle form submit with Alert
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      alert("Customer name is required");
+      alert.warning("Customer name is required", {
+        description: "Please enter a customer name.",
+      });
       return;
     }
 
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: editingCustomer ? 'Updating customer...' : 'Creating customer...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       let res;
       if (editingCustomer) {
         res = await editCustomer(editingCustomer.id, formData);
       } else {
         res = await addCustomer(formData);
       }
+
+      alert.hideAlert(loadingId);
       
       if (res?.success) {
-        alert(editingCustomer ? "Customer updated successfully!" : "Customer created successfully!");
+        alert.success(
+          editingCustomer ? "Customer updated successfully!" : "Customer created successfully!",
+          {
+            description: `"${formData.name}" has been ${editingCustomer ? 'updated' : 'added'} to the system.`,
+          }
+        );
         setIsModalOpen(false);
         setFormData({
           name: "",
@@ -163,17 +219,25 @@ const CustomerPage = () => {
         loadCustomers(filter);
       } else {
         if (res?.message?.includes("already exists")) {
-          alert(res.message);
+          alert.warning(res.message, {
+            description: "Please use a different name.",
+          });
         } else {
-          alert(res?.message || "Failed to save customer");
+          alert.error("Failed to save customer", {
+            description: res?.message || "Please try again.",
+          });
         }
       }
     } catch (error) {
       console.error("Error saving customer:", error);
       if (error.message?.includes("already exists")) {
-        alert(error.message);
+        alert.warning(error.message, {
+          description: "Please use a different name.",
+        });
       } else {
-        alert("An error occurred while saving the customer. Please try again.");
+        alert.error("An error occurred while saving", {
+          description: error.message || "Please try again later.",
+        });
       }
     }
   };
@@ -190,7 +254,10 @@ const CustomerPage = () => {
   // Handle select customer (for POS)
   const handleSelectCustomer = (customer) => {
     selectCustomer(customer);
-    alert(`Selected customer: ${customer.name} (Discount: ${parseFloat(customer.discount) || 0}%)`);
+    alert.success(`Customer selected!`, {
+      description: `${customer.name} (Discount: ${parseFloat(customer.discount) || 0}%)`,
+      duration: 3000,
+    });
   };
 
   // Get customer type badge
@@ -229,7 +296,7 @@ const CustomerPage = () => {
 
       {/* Stats Cards - Using summary from hook */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Total</p>
@@ -240,29 +307,29 @@ const CustomerPage = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">VIP</p>
-              <p className="text-2xl font-semibold text-gray-800 mt-1">{summary?.vip || 0}</p>
+              <p className="text-2xl font-semibold text-amber-600 mt-1">{summary?.vip || 0}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
               <FiStar className="w-5 h-5" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Members</p>
-              <p className="text-2xl font-semibold text-gray-800 mt-1">{summary?.member || 0}</p>
+              <p className="text-2xl font-semibold text-emerald-600 mt-1">{summary?.member || 0}</p>
             </div>
             <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
               <FiCheckCircle className="w-5 h-5" />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Regular</p>
@@ -276,7 +343,7 @@ const CustomerPage = () => {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mb-6 shadow-sm">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mb-6 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1 relative">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -320,7 +387,13 @@ const CustomerPage = () => {
           )}
 
           <button
-            onClick={() => loadCustomers(filter)}
+            onClick={() => {
+              loadCustomers(filter);
+              alert.success("Customers refreshed!", {
+                description: "Data has been updated.",
+                duration: 2000,
+              });
+            }}
             className="px-4 py-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -329,7 +402,7 @@ const CustomerPage = () => {
       </div>
 
       {/* Results Section */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-black border-t-transparent"></div>
@@ -731,6 +804,20 @@ const CustomerPage = () => {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={config.isOpen}
+        onClose={config.onCancel || (() => {})}
+        onConfirm={config.onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        icon={config.icon}
+        loading={config.loading}
+      />
     </div>
   );
 };

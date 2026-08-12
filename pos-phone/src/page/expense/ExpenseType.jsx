@@ -14,6 +14,9 @@ import {
   FiAlertCircle,
 } from "react-icons/fi";
 import useExpenseType from "../../hooks/useExpenseType";
+import { useAlert } from "../../components/common/Alert";
+import { useConfirm } from "../../hooks/useConfirm";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 const ExpenseType = () => {
   const {
@@ -25,6 +28,9 @@ const ExpenseType = () => {
     deleteExpenseType,
   } = useExpenseType();
 
+  const alert = useAlert();
+  const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
+
   const [showModal, setShowModal] = useState(false);
   const [editingType, setEditingType] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,8 +39,6 @@ const ExpenseType = () => {
     code: "",
   });
   const [formErrors, setFormErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState("");
-  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     loadExpenseTypes();
@@ -49,8 +53,6 @@ const ExpenseType = () => {
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: "" });
     }
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
   const validateForm = () => {
@@ -67,10 +69,16 @@ const ExpenseType = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setSubmitError("");
-    setSuccessMessage("");
 
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: editingType ? 'Updating category...' : 'Creating category...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       const typeData = {
         name: formData.name.trim(),
         code: formData.code.trim().toUpperCase(),
@@ -79,42 +87,68 @@ const ExpenseType = () => {
       let result;
       if (editingType) {
         result = await updateExpenseType(editingType.id, typeData);
-        if (result) {
-          setSuccessMessage("Category updated successfully!");
-        }
       } else {
         result = await createExpenseType(typeData);
-        if (result) {
-          setSuccessMessage("Category created successfully!");
-        }
       }
+
+      alert.hideAlert(loadingId);
 
       if (result) {
         setFormData({ name: "", code: "" });
         await loadExpenseTypes();
-        setTimeout(() => {
-          setShowModal(false);
-          setEditingType(null);
-          setSuccessMessage("");
-        }, 1500);
+        alert.success(
+          editingType ? 'Category updated successfully!' : 'Category created successfully!',
+          {
+            description: `"${formData.name}" has been ${editingType ? 'updated' : 'added'}.`,
+          }
+        );
+        setShowModal(false);
+        setEditingType(null);
       }
     } catch (error) {
       console.error("Error saving expense type:", error);
-      setSubmitError(error.message || "An error occurred");
+      alert.error("Failed to save category", {
+        description: error.message || "Please try again.",
+      });
     }
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
+    const confirmed = await showConfirm({
+      title: "Delete Category",
+      message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      confirmText: "Delete Category",
+      cancelText: "Cancel",
+      type: "danger",
+      icon: FiTrash2,
+    });
 
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: `Deleting "${name}"...`,
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       await deleteExpenseType(id);
       await loadExpenseTypes();
-      setSuccessMessage("Category deleted successfully!");
-      setTimeout(() => setSuccessMessage(""), 2000);
+
+      alert.hideAlert(loadingId);
+      alert.success("Category deleted successfully!", {
+        description: `"${name}" has been removed.`,
+      });
     } catch (error) {
       console.error("Error deleting expense type:", error);
-      setSubmitError(error.message || "Failed to delete category");
+      alert.error("Failed to delete category", {
+        description: error.message || "Please try again.",
+      });
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -126,8 +160,6 @@ const ExpenseType = () => {
     });
     setShowModal(true);
     setFormErrors({});
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
   const openCreateModal = () => {
@@ -135,8 +167,6 @@ const ExpenseType = () => {
     setFormData({ name: "", code: "" });
     setShowModal(true);
     setFormErrors({});
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
   const closeModal = () => {
@@ -144,8 +174,6 @@ const ExpenseType = () => {
     setEditingType(null);
     setFormData({ name: "", code: "" });
     setFormErrors({});
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
   const filteredTypes = expenseTypes.filter((type) =>
@@ -197,7 +225,7 @@ const ExpenseType = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">Total Categories</p>
@@ -211,7 +239,7 @@ const ExpenseType = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">Active Categories</p>
@@ -225,7 +253,7 @@ const ExpenseType = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">Inactive</p>
@@ -251,28 +279,19 @@ const ExpenseType = () => {
           />
         </div>
         <button
-          onClick={() => loadExpenseTypes()}
+          onClick={() => {
+            loadExpenseTypes();
+            alert.success("Categories refreshed!", {
+              description: "Data has been updated.",
+              duration: 2000,
+            });
+          }}
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
         >
           <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
       </div>
-
-      {/* Success/Error Messages */}
-      {successMessage && (
-        <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3.5 flex items-start gap-3">
-          <FiCheck className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-emerald-700">{successMessage}</p>
-        </div>
-      )}
-
-      {submitError && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3.5 flex items-start gap-3">
-          <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-700">{submitError}</p>
-        </div>
-      )}
 
       {/* Categories Grid */}
       {loading ? (
@@ -381,20 +400,6 @@ const ExpenseType = () => {
 
             {/* Modal Body */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {successMessage && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3.5 flex items-start gap-3">
-                  <FiCheck className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-emerald-700">{successMessage}</p>
-                </div>
-              )}
-
-              {submitError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3.5 flex items-start gap-3">
-                  <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{submitError}</p>
-                </div>
-              )}
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Category Name <span className="text-red-500">*</span>
@@ -463,6 +468,19 @@ const ExpenseType = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={config.isOpen}
+        onClose={config.onCancel || (() => {})}
+        onConfirm={config.onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        icon={config.icon}
+        loading={config.loading}
+      />
     </div>
   );
 };

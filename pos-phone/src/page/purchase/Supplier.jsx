@@ -1,6 +1,5 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import useSupplier from "../../hooks/useSupplier";
-import SuccessModal from "../../components/common/SuccessModal";
 import Table from "../../components/ui/Table";
 import {
   Building2,
@@ -25,6 +24,9 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { useAlert } from "../../components/common/Alert";
+import { useConfirm } from "../../hooks/useConfirm";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 function Supplier() {
   const {
@@ -35,10 +37,10 @@ function Supplier() {
     removeSupplier,
     loadSuppliers,
   } = useSupplier();
-  const [successModal, setSuccessModal] = useState({
-    open: false,
-    message: "",
-  });
+
+  const alert = useAlert();
+  const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
+
   const [form, setForm] = useState({
     name: "",
     address: "",
@@ -62,30 +64,62 @@ function Supplier() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let res;
-    if (isEdit) {
-      res = await editSupplier(selectedId, form);
-    } else {
-      res = await addSupplier(form);
+
+    if (!form.name.trim()) {
+      alert.warning("Company name is required", {
+        description: "Please enter a company name.",
+      });
+      return;
     }
-    if (res?.success) {
-      setSuccessModal({
-        open: true,
-        message: res.message,
+
+    try {
+      const loadingId = alert.showAlert({
+        type: "info",
+        message: isEdit ? "Updating supplier..." : "Creating supplier...",
+        description: "Please wait...",
+        duration: 0,
+        closable: false,
       });
-      setIsEdit(false);
-      setSelectedId(null);
-      setForm({
-        name: "",
-        address: "",
-        code: "",
-        note: "",
-        tel: "",
-        website: "",
-        email: "",
+
+      let res;
+      if (isEdit) {
+        res = await editSupplier(selectedId, form);
+      } else {
+        res = await addSupplier(form);
+      }
+
+      alert.hideAlert(loadingId);
+
+      if (res?.success) {
+        setIsEdit(false);
+        setSelectedId(null);
+        setForm({
+          name: "",
+          address: "",
+          code: "",
+          note: "",
+          tel: "",
+          website: "",
+          email: "",
+        });
+        setIsModalOpen(false);
+        await loadSuppliers();
+
+        alert.success(
+          isEdit ? "Supplier updated successfully!" : "Supplier created successfully!",
+          {
+            description: `"${form.name}" has been ${isEdit ? "updated" : "added"} to the system.`,
+          }
+        );
+      } else {
+        alert.error("Failed to save supplier", {
+          description: res?.message || "Please try again.",
+        });
+      }
+    } catch (error) {
+      alert.error("An error occurred while saving", {
+        description: error.message || "Please try again later.",
       });
-      setIsModalOpen(false);
-      loadSuppliers();
     }
   };
 
@@ -104,16 +138,48 @@ function Supplier() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this supplier?")) {
-      const res = await removeSupplier(id);
+  const handleDelete = async (supplier) => {
+    const confirmed = await showConfirm({
+      title: "Delete Supplier",
+      message: `Are you sure you want to delete "${supplier.name}"? This action cannot be undone.`,
+      confirmText: "Delete Supplier",
+      cancelText: "Cancel",
+      type: "danger",
+      icon: Trash2,
+    });
+
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
+    try {
+      const loadingId = alert.showAlert({
+        type: "info",
+        message: `Deleting "${supplier.name}"...`,
+        description: "Please wait...",
+        duration: 0,
+        closable: false,
+      });
+
+      const res = await removeSupplier(supplier.id);
+
+      alert.hideAlert(loadingId);
+
       if (res?.success) {
-        setSuccessModal({
-          open: true,
-          message: res.message,
+        await loadSuppliers();
+        alert.success("Supplier deleted successfully!", {
+          description: `"${supplier.name}" has been removed from the system.`,
         });
-        loadSuppliers();
+      } else {
+        alert.error("Failed to delete supplier", {
+          description: res?.message || "Please try again.",
+        });
       }
+    } catch (error) {
+      alert.error("An error occurred while deleting", {
+        description: error.message || "Please try again later.",
+      });
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -151,12 +217,12 @@ function Supplier() {
     (supplier) =>
       supplier.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       supplier.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+      supplier.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalSuppliers = suppliers.length;
   const activeSuppliers = totalSuppliers;
-  const recentSuppliers = suppliers.filter(supplier => {
+  const recentSuppliers = suppliers.filter((supplier) => {
     if (!supplier.create_at) return false;
     const createdDate = new Date(supplier.create_at);
     const thirtyDaysAgo = new Date();
@@ -264,7 +330,7 @@ function Supplier() {
             <Edit size={16} className="text-blue-600" />
           </button>
           <button
-            onClick={() => handleDelete(row.id)}
+            onClick={() => handleDelete(row)}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <Trash2 size={16} className="text-red-500" />
@@ -281,29 +347,27 @@ function Supplier() {
     <div className="min-h-screen bg-gray-50">
       <div>
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-800 tracking-tight">
-                Supplier Management
-              </h1>
-              <p className="text-gray-500 mt-1 text-sm">
-                Manage your supplier database and vendor relationships
-              </p>
-            </div>
-            <button
-              onClick={openCreateModal}
-              className="flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-lg font-medium transition-all duration-200 text-sm shadow-sm"
-            >
-              <Plus size={18} />
-              Add Supplier
-            </button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800 tracking-tight">
+              Supplier Management
+            </h1>
+            <p className="text-gray-500 mt-1 text-sm">
+              Manage your supplier database and vendor relationships
+            </p>
           </div>
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-lg font-medium transition-all duration-200 text-sm shadow-sm"
+          >
+            <Plus size={18} />
+            Add Supplier
+          </button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">
@@ -313,8 +377,8 @@ function Supplier() {
                   {totalSuppliers}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Building2 className="text-gray-700" size={24} />
+              <div className="w-11 h-11 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Building2 className="text-gray-700" size={22} />
               </div>
             </div>
             <div className="mt-3 flex items-center gap-1 text-xs">
@@ -323,7 +387,7 @@ function Supplier() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">
@@ -333,8 +397,8 @@ function Supplier() {
                   {activeSuppliers}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center">
-                <CheckCircle className="text-emerald-600" size={24} />
+              <div className="w-11 h-11 bg-emerald-50 rounded-lg flex items-center justify-center">
+                <CheckCircle className="text-emerald-600" size={22} />
               </div>
             </div>
             <div className="mt-3 flex items-center gap-1 text-xs">
@@ -345,7 +409,7 @@ function Supplier() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">
@@ -355,8 +419,8 @@ function Supplier() {
                   {recentSuppliers}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <UserPlus className="text-blue-600" size={24} />
+              <div className="w-11 h-11 bg-blue-50 rounded-lg flex items-center justify-center">
+                <UserPlus className="text-blue-600" size={22} />
               </div>
             </div>
             <div className="mt-3 flex items-center gap-1 text-xs">
@@ -364,7 +428,7 @@ function Supplier() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Inactive</p>
@@ -372,8 +436,8 @@ function Supplier() {
                   {totalSuppliers - activeSuppliers}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center">
-                <XCircle className="text-gray-400" size={24} />
+              <div className="w-11 h-11 bg-gray-50 rounded-lg flex items-center justify-center">
+                <XCircle className="text-gray-400" size={22} />
               </div>
             </div>
             <div className="mt-3 flex items-center gap-1 text-xs">
@@ -383,9 +447,9 @@ function Supplier() {
         </div>
 
         {/* Supplier List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
           {/* Toolbar */}
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <h2 className="text-sm font-medium text-gray-700">
@@ -417,7 +481,16 @@ function Supplier() {
                 <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200">
                   <Filter size={18} className="text-gray-500" />
                 </button>
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200">
+                <button
+                  onClick={() => {
+                    loadSuppliers();
+                    alert.success("Suppliers refreshed!", {
+                      description: "Data has been updated.",
+                      duration: 2000,
+                    });
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                >
                   <Download size={18} className="text-gray-500" />
                 </button>
               </div>
@@ -436,7 +509,7 @@ function Supplier() {
 
           {/* Footer */}
           {filteredSuppliers.length > 0 && (
-            <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3">
+            <div className="px-4 sm:px-6 py-3 bg-gray-50 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm text-gray-600">
                 Showing{" "}
                 <span className="font-medium">
@@ -469,7 +542,7 @@ function Supplier() {
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white w-full max-w-2xl rounded-lg shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">
                   {isEdit ? "Edit Supplier" : "Add New Supplier"}
@@ -489,7 +562,7 @@ function Supplier() {
             </div>
 
             {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-700 uppercase tracking-wider mb-1.5">
@@ -650,16 +723,17 @@ function Supplier() {
           </div>
         </div>
       )}
-
-      <SuccessModal
-        open={successModal.open}
-        message={successModal.message}
-        onClose={() =>
-          setSuccessModal({
-            open: false,
-            message: "",
-          })
-        }
+      <ConfirmModal
+        isOpen={config.isOpen}
+        onClose={config.onCancel || (() => {})}
+        onConfirm={config.onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        icon={config.icon}
+        loading={config.loading}
       />
     </div>
   );

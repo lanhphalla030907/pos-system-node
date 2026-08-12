@@ -222,3 +222,14 @@ CREATE TABLE employee (
 );
 
 CREATE TABLE audit_logs ( id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT NULL, action VARCHAR(50) NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'success', ip_address VARCHAR(45) NULL, user_agent TEXT NULL, metadata JSON NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, INDEX idx_user_id (user_id), INDEX idx_action (action), INDEX idx_created_at (created_at), CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE SET NULL );
+
+CREATE TABLE payment_method (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    type ENUM('cash', 'bank', 'mobile', 'card', 'other') NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    create_by INT NULL,
+    create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+);

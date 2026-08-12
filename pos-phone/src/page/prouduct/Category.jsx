@@ -18,6 +18,9 @@ import {
 import { request } from "../../util/helper";
 import MainPage from "../../components/layout/MainPage";
 import Table from "../../components/ui/Table";
+import { useAlert } from "../../components/common/Alert";
+import useConfirm from "../../hooks/useConfirm";
+import ConfirmModal from "../../components/common/ConfirmModal"; 
 
 const Category = () => {
   // State Management
@@ -27,7 +30,10 @@ const Category = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-
+  
+  const alert = useAlert();
+  const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
+  
   const [formData, setFormData] = useState({
     id: null,
     name: "",
@@ -110,10 +116,12 @@ const Category = () => {
     resetForm();
   };
 
-  // CRUD Operations
+
   const handleSubmit = async () => {
     if (!formData.name.trim()) {
-      alert("Category name is required");
+      alert.warning('Category name is required', {
+        description: 'Please enter a category name.',
+      });
       return;
     }
 
@@ -129,35 +137,83 @@ const Category = () => {
       const endpoint = isEditing ? "category" : "category";
       const method = isEditing ? "put" : "post";
 
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: isEditing ? 'Updating category...' : 'Creating category...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       const response = await request(endpoint, method, payload);
+
+      alert.hideAlert(loadingId);
 
       if (response) {
         closeModal();
-        fetchCategories();
+        await fetchCategories();
+        
+        alert.success(
+          isEditing ? 'Category updated successfully!' : 'Category created successfully!',
+          {
+            description: `"${formData.name}" has been ${isEditing ? 'updated' : 'added'} to the system.`,
+          }
+        );
       } else {
-        alert(response?.message || "Failed to save category");
+        alert.error('Failed to save category', {
+          description: response?.message || 'Please try again.',
+        });
       }
     } catch (err) {
-      alert("An error occurred while saving");
+      alert.error('An error occurred while saving', {
+        description: err.message || 'Please try again later.',
+      });
     }
   };
 
-  const handleDelete = async (category) => {
-    if (
-      !window.confirm(`Are you sure you want to delete "${category.Name}"?`)
-    ) {
-      return;
-    }
 
+  const handleDelete = async (category) => {
+    const confirmed = await showConfirm({
+      title: 'Delete Category',
+      message: `Are you sure you want to delete "${category.Name}"? This action cannot be undone.`,
+      confirmText: 'Delete Category',
+      cancelText: 'Cancel',
+      type: 'danger',
+      icon: FiTrash2,
+    });
+
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: `Deleting "${category.Name}"...`,
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       const response = await request("category", "delete", { id: category.Id });
+      
+      alert.hideAlert(loadingId);
+
       if (response) {
-        fetchCategories();
+        await fetchCategories();
+        alert.success('Category deleted successfully!', {
+          description: `"${category.Name}" has been removed from the system.`,
+        });
       } else {
-        alert(response?.message || "Failed to delete category");
+        alert.error('Failed to delete category', {
+          description: response?.message || 'Please try again.',
+        });
       }
     } catch (err) {
-      alert("An error occurred while deleting");
+      alert.error('An error occurred while deleting', {
+        description: err.message || 'Please try again later.',
+      });
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -184,7 +240,7 @@ const Category = () => {
 
   // Filter categories based on search
   const filteredCategories = categories.filter((category) =>
-    category.Name.toLowerCase().includes(searchTerm.toLowerCase())
+    category.Name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Table Columns Configuration
@@ -373,7 +429,7 @@ const Category = () => {
             return (
               <div
                 key={index}
-                className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm"
+                className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm"
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -396,32 +452,34 @@ const Category = () => {
           })}
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        {/* Search & Table */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 className="text-sm font-medium text-gray-700">
-                Category List
-              </h2>
+              <h2 className="text-sm font-medium text-gray-700">Category List</h2>
               <p className="text-xs text-gray-400 mt-0.5">
-                {filteredCategories.length}{" "}
-                {filteredCategories.length === 1 ? "category" : "categories"}{" "}
-                found
+                {filteredCategories.length} {filteredCategories.length === 1 ? "category" : "categories"} found
               </p>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Search categories..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-4 py-1.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none bg-white w-48 transition-all"
+                  className="w-48 md:w-64 pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                 />
               </div>
               <button
-                onClick={fetchCategories}
+                onClick={() => {
+                  fetchCategories();
+                  alert.success('Categories refreshed!', {
+                    description: 'Data has been updated.',
+                    duration: 2000,
+                  });
+                }}
                 className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 text-gray-400 hover:text-gray-600"
                 title="Refresh"
               >
@@ -440,7 +498,7 @@ const Category = () => {
           />
         </div>
 
-        {/* Modal */}
+        {/* Add/Edit Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white w-full max-w-lg rounded-lg shadow-xl overflow-hidden">
@@ -458,7 +516,7 @@ const Category = () => {
                 </div>
                 <button
                   onClick={closeModal}
-                  className="w-8 h-8 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 flex items-center justify-center"
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 flex items-center justify-center"
                 >
                   <FiX className="w-5 h-5" />
                 </button>
@@ -472,7 +530,7 @@ const Category = () => {
                     Category Name <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <FiTag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <FiTag className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <input
                       type="text"
                       name="name"
@@ -535,13 +593,13 @@ const Category = () => {
               <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
                 <button
                   onClick={closeModal}
-                  className="px-5 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm text-gray-600 font-medium"
+                  className="px-5 py-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm text-gray-600 font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSubmit}
-                  className="px-5 py-2 bg-black hover:bg-gray-800 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-sm"
+                  className="px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-lg transition-all duration-200 text-sm font-medium shadow-sm"
                 >
                   {isEditing ? "Update Category" : "Save Category"}
                 </button>
@@ -550,6 +608,20 @@ const Category = () => {
           </div>
         )}
       </div>
+
+   
+      <ConfirmModal
+        isOpen={config.isOpen}
+        onClose={config.onCancel || (() => {})}
+        onConfirm={config.onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        icon={config.icon}
+        loading={config.loading}
+      />
     </MainPage>
   );
 };

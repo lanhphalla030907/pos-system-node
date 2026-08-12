@@ -1,6 +1,6 @@
-// pages/RoleManagement.jsx - Redesigned with Black theme and great UX
-import React, { useState, useEffect } from 'react';
-import useRole from '../../hooks/useRole';
+// pages/RoleManagement.jsx - With Alert & Confirm Modal
+import React, { useState, useEffect } from "react";
+import useRole from "../../hooks/useRole";
 import {
   FiPlus,
   FiEdit2,
@@ -19,7 +19,10 @@ import {
   FiRefreshCw,
   FiChevronLeft,
   FiChevronRight,
-} from 'react-icons/fi';
+} from "react-icons/fi";
+import { useAlert } from "../../components/common/Alert";
+import { useConfirm } from "../../hooks/useConfirm";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 const RoleManagement = () => {
   const {
@@ -33,18 +36,19 @@ const RoleManagement = () => {
     removeRole,
   } = useRole();
 
+  const alert = useAlert();
+  const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
+
   const [showModal, setShowModal] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState({
-    name: '',
-    code: '',
-    description: '',
+    name: "",
+    code: "",
+    description: "",
   });
   const [formErrors, setFormErrors] = useState({});
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     loadRolesData();
@@ -58,7 +62,7 @@ const RoleManagement = () => {
         limit: 10,
       });
     } catch (error) {
-      console.error('Error loading roles:', error);
+      console.error("Error loading roles:", error);
     }
   };
 
@@ -78,23 +82,22 @@ const RoleManagement = () => {
     if (formErrors[e.target.name]) {
       setFormErrors({
         ...formErrors,
-        [e.target.name]: '',
+        [e.target.name]: "",
       });
     }
-    setErrorMessage('');
-    setSuccessMessage('');
   };
 
   const validateForm = () => {
     const errors = {};
     if (!formData.name.trim()) {
-      errors.name = 'Role name is required';
+      errors.name = "Role name is required";
     }
     if (!formData.code.trim()) {
-      errors.code = 'Role code is required';
+      errors.code = "Role code is required";
     }
     if (formData.code && !/^[a-z0-9_]+$/.test(formData.code.toLowerCase())) {
-      errors.code = 'Code must contain only lowercase letters, numbers, and underscores';
+      errors.code =
+        "Code must contain only lowercase letters, numbers, and underscores";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -105,6 +108,14 @@ const RoleManagement = () => {
     if (!validateForm()) return;
 
     try {
+      const loadingId = alert.showAlert({
+        type: "info",
+        message: editingRole ? "Updating role..." : "Creating role...",
+        description: "Please wait...",
+        duration: 0,
+        closable: false,
+      });
+
       const roleData = {
         name: formData.name.trim(),
         code: formData.code.trim().toLowerCase(),
@@ -114,39 +125,71 @@ const RoleManagement = () => {
       let result;
       if (editingRole) {
         result = await editRole(editingRole.id, roleData);
-        if (result) {
-          setSuccessMessage('Role updated successfully!');
-        }
       } else {
         result = await addRole(roleData);
-        if (result) {
-          setSuccessMessage('Role created successfully!');
-        }
       }
 
-      setFormData({ name: '', code: '', description: '' });
-      setShowModal(false);
-      setEditingRole(null);
-      await loadRolesData();
-      
-      setTimeout(() => setSuccessMessage(''), 3000);
+      alert.hideAlert(loadingId);
+
+      if (result) {
+        setFormData({ name: "", code: "", description: "" });
+        setShowModal(false);
+        setEditingRole(null);
+        await loadRolesData();
+
+        alert.success(
+          editingRole
+            ? "Role updated successfully!"
+            : "Role created successfully!",
+          {
+            description: `"${formData.name}" has been ${editingRole ? "updated" : "added"}.`,
+          },
+        );
+      }
     } catch (error) {
-      console.error('Error saving role:', error);
-      setErrorMessage(error.message || 'Failed to save role');
+      console.error("Error saving role:", error);
+      alert.error("Failed to save role", {
+        description: error.message || "Please try again.",
+      });
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this role?')) return;
+  const handleDelete = async (id, name) => {
+    const confirmed = await showConfirm({
+      title: "Delete Role",
+      message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      confirmText: "Delete Role",
+      cancelText: "Cancel",
+      type: "danger",
+      icon: FiTrash2,
+    });
 
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
     try {
+      const loadingId = alert.showAlert({
+        type: "info",
+        message: `Deleting "${name}"...`,
+        description: "Please wait...",
+        duration: 0,
+        closable: false,
+      });
+
       await removeRole(id);
       await loadRolesData();
-      setSuccessMessage('Role deleted successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+
+      alert.hideAlert(loadingId);
+      alert.success("Role deleted successfully!", {
+        description: `"${name}" has been removed.`,
+      });
     } catch (error) {
-      console.error('Error deleting role:', error);
-      setErrorMessage(error.message || 'Failed to delete role');
+      console.error("Error deleting role:", error);
+      alert.error("Failed to delete role", {
+        description: error.message || "Please try again.",
+      });
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -155,45 +198,42 @@ const RoleManagement = () => {
       const role = await loadRoleById(id);
       setEditingRole(role);
       setFormData({
-        name: role.name || '',
-        code: role.code || '',
-        description: role.description || '',
+        name: role.name || "",
+        code: role.code || "",
+        description: role.description || "",
       });
       setShowModal(true);
-      setErrorMessage('');
-      setSuccessMessage('');
+      setFormErrors({});
     } catch (error) {
-      console.error('Error loading role:', error);
-      setErrorMessage('Failed to load role details');
+      console.error("Error loading role:", error);
+      alert.error("Failed to load role details", {
+        description: error.message || "Please try again.",
+      });
     }
   };
 
   const openCreateModal = () => {
     setEditingRole(null);
-    setFormData({ name: '', code: '', description: '' });
+    setFormData({ name: "", code: "", description: "" });
     setShowModal(true);
     setFormErrors({});
-    setErrorMessage('');
-    setSuccessMessage('');
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingRole(null);
-    setFormData({ name: '', code: '', description: '' });
+    setFormData({ name: "", code: "", description: "" });
     setFormErrors({});
-    setErrorMessage('');
-    setSuccessMessage('');
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -207,35 +247,8 @@ const RoleManagement = () => {
   const totalRoles = pagination?.total || roles.length || 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className='space-y-6'>
-        {/* Success/Error Messages */}
-        {successMessage && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center gap-3">
-            <FiCheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-            <span className="text-sm text-emerald-700">{successMessage}</span>
-            <button
-              onClick={() => setSuccessMessage('')}
-              className="ml-auto text-emerald-500 hover:text-emerald-700"
-            >
-              <FiX className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {errorMessage && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
-            <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-            <span className="text-sm text-red-700">{errorMessage}</span>
-            <button
-              onClick={() => setErrorMessage('')}
-              className="ml-auto text-red-500 hover:text-red-700"
-            >
-              <FiX className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
+    <div className="min-h-screen bg-gray-50 ">
+      <div className="space-y-6">
         {/* Header */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -244,7 +257,9 @@ const RoleManagement = () => {
                 <FiShield className="w-6 h-6 text-gray-400" />
                 Role Management
               </h1>
-              <p className="text-sm text-gray-500 mt-0.5">Manage user roles and permissions</p>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Manage user roles and permissions
+              </p>
             </div>
             <button
               onClick={openCreateModal}
@@ -258,32 +273,42 @@ const RoleManagement = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Total Roles</p>
-                <p className="text-2xl font-semibold text-gray-800 mt-1">{totalRoles}</p>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                  Total Roles
+                </p>
+                <p className="text-2xl font-semibold text-gray-800 mt-1">
+                  {totalRoles}
+                </p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600">
                 <FiShield className="w-5 h-5" />
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Active Roles</p>
-                <p className="text-2xl font-semibold text-emerald-600 mt-1">{totalRoles}</p>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                  Active Roles
+                </p>
+                <p className="text-2xl font-semibold text-emerald-600 mt-1">
+                  {totalRoles}
+                </p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
                 <FiUserCheck className="w-5 h-5" />
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Permissions</p>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                  Permissions
+                </p>
                 <p className="text-2xl font-semibold text-purple-600 mt-1">0</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
@@ -291,10 +316,12 @@ const RoleManagement = () => {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Users</p>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+                  Users
+                </p>
                 <p className="text-2xl font-semibold text-blue-600 mt-1">0</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
@@ -305,7 +332,7 @@ const RoleManagement = () => {
         </div>
 
         {/* Roles Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
           {/* Search Bar */}
           <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50/50">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -320,7 +347,7 @@ const RoleManagement = () => {
                 />
                 {searchTerm && (
                   <button
-                    onClick={() => setSearchTerm('')}
+                    onClick={() => setSearchTerm("")}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     <FiX className="w-4 h-4" />
@@ -329,13 +356,24 @@ const RoleManagement = () => {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => loadRolesData()}
+                  onClick={() => {
+                    loadRolesData();
+                    alert.success("Roles refreshed!", {
+                      description: "Data has been updated.",
+                      duration: 2000,
+                    });
+                  }}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                  <FiRefreshCw
+                    className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                  />
                 </button>
                 <span className="text-sm text-gray-400">
-                  Total: <span className="font-semibold text-gray-700">{totalRoles}</span>
+                  Total:{" "}
+                  <span className="font-semibold text-gray-700">
+                    {totalRoles}
+                  </span>
                 </span>
               </div>
             </div>
@@ -385,16 +423,23 @@ const RoleManagement = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {roles.map((role) => (
-                    <tr key={role.id} className="hover:bg-gray-50/80 transition-colors group">
+                    <tr
+                      key={role.id}
+                      className="hover:bg-gray-50/80 transition-colors group"
+                    >
                       <td className="py-3 px-4 sm:px-6">
-                        <span className="text-sm text-gray-400 font-mono">#{role.id}</span>
+                        <span className="text-sm text-gray-400 font-mono">
+                          #{role.id}
+                        </span>
                       </td>
                       <td className="py-3 px-4 sm:px-6">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
-                            {role.name?.charAt(0).toUpperCase() || 'R'}
+                            {role.name?.charAt(0).toUpperCase() || "R"}
                           </div>
-                          <span className="text-sm font-medium text-gray-800">{role.name}</span>
+                          <span className="text-sm font-medium text-gray-800">
+                            {role.name}
+                          </span>
                         </div>
                       </td>
                       <td className="py-3 px-4 sm:px-6 hidden sm:table-cell">
@@ -404,7 +449,7 @@ const RoleManagement = () => {
                       </td>
                       <td className="py-3 px-4 sm:px-6 hidden md:table-cell">
                         <span className="text-sm text-gray-600 line-clamp-1 max-w-[150px]">
-                          {role.description || '-'}
+                          {role.description || "-"}
                         </span>
                       </td>
                       <td className="py-3 px-4 sm:px-6 hidden lg:table-cell">
@@ -414,7 +459,9 @@ const RoleManagement = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 sm:px-6 hidden xl:table-cell">
-                        <span className="text-sm text-gray-500">{role.create_by_name || 'System'}</span>
+                        <span className="text-sm text-gray-500">
+                          {role.create_by_name || "System"}
+                        </span>
                       </td>
                       <td className="py-3 px-4 sm:px-6 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -426,7 +473,7 @@ const RoleManagement = () => {
                             <FiEdit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(role.id)}
+                            onClick={() => handleDelete(role.id, role.name)}
                             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Delete"
                           >
@@ -446,7 +493,9 @@ const RoleManagement = () => {
               </div>
               <p className="text-gray-500 font-medium">No roles found</p>
               <p className="text-sm text-gray-400 mt-1">
-                {searchTerm ? 'Try adjusting your search' : 'Create your first role to get started'}
+                {searchTerm
+                  ? "Try adjusting your search"
+                  : "Create your first role to get started"}
               </p>
               {!searchTerm && (
                 <button
@@ -464,7 +513,11 @@ const RoleManagement = () => {
           {roles.length > 0 && totalPages > 1 && (
             <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-sm text-gray-500 order-2 sm:order-1">
-                Showing page <span className="font-medium text-gray-700">{pagination?.page || 1}</span> of{' '}
+                Showing page{" "}
+                <span className="font-medium text-gray-700">
+                  {pagination?.page || 1}
+                </span>{" "}
+                of{" "}
                 <span className="font-medium text-gray-700">{totalPages}</span>
               </p>
               <div className="flex items-center gap-1 order-1 sm:order-2">
@@ -482,8 +535,8 @@ const RoleManagement = () => {
                       onClick={() => setCurrentPage(page)}
                       className={`px-3.5 py-1.5 text-sm rounded-lg transition-all ${
                         currentPage === page
-                          ? 'bg-black text-white shadow-sm'
-                          : 'hover:bg-gray-100 text-gray-600'
+                          ? "bg-black text-white shadow-sm"
+                          : "hover:bg-gray-100 text-gray-600"
                       }`}
                     >
                       {page}
@@ -491,7 +544,9 @@ const RoleManagement = () => {
                   ))}
                 </div>
                 <button
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  onClick={() =>
+                    setCurrentPage(Math.min(totalPages, currentPage + 1))
+                  }
                   disabled={currentPage === totalPages}
                   className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -510,10 +565,12 @@ const RoleManagement = () => {
             <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">
-                  {editingRole ? 'Edit Role' : 'Create New Role'}
+                  {editingRole ? "Edit Role" : "Create New Role"}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  {editingRole ? 'Update role information' : 'Add a new role to the system'}
+                  {editingRole
+                    ? "Update role information"
+                    : "Add a new role to the system"}
                 </p>
               </div>
               <button
@@ -537,13 +594,15 @@ const RoleManagement = () => {
                     value={formData.name}
                     onChange={handleChange}
                     className={`w-full pl-10 pr-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white ${
-                      formErrors.name ? 'border-red-400' : 'border-gray-200'
+                      formErrors.name ? "border-red-400" : "border-gray-200"
                     }`}
                     placeholder="e.g., Administrator"
                   />
                 </div>
                 {formErrors.name && (
-                  <p className="mt-1.5 text-xs text-red-500">{formErrors.name}</p>
+                  <p className="mt-1.5 text-xs text-red-500">
+                    {formErrors.name}
+                  </p>
                 )}
               </div>
 
@@ -559,15 +618,19 @@ const RoleManagement = () => {
                     value={formData.code}
                     onChange={handleChange}
                     className={`w-full pl-10 pr-4 py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white ${
-                      formErrors.code ? 'border-red-400' : 'border-gray-200'
+                      formErrors.code ? "border-red-400" : "border-gray-200"
                     }`}
                     placeholder="e.g., admin"
                   />
                 </div>
                 {formErrors.code && (
-                  <p className="mt-1.5 text-xs text-red-500">{formErrors.code}</p>
+                  <p className="mt-1.5 text-xs text-red-500">
+                    {formErrors.code}
+                  </p>
                 )}
-                <p className="mt-1 text-xs text-gray-400">Lowercase letters, numbers, and underscores only</p>
+                <p className="mt-1 text-xs text-gray-400">
+                  Lowercase letters, numbers, and underscores only
+                </p>
               </div>
 
               <div>
@@ -589,7 +652,7 @@ const RoleManagement = () => {
                   type="submit"
                   className="px-5 py-2.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all shadow-sm flex-1"
                 >
-                  {editingRole ? 'Update Role' : 'Create Role'}
+                  {editingRole ? "Update Role" : "Create Role"}
                 </button>
                 <button
                   type="button"
@@ -603,6 +666,19 @@ const RoleManagement = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={config.isOpen}
+        onClose={config.onCancel || (() => {})}
+        onConfirm={config.onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        icon={config.icon}
+        loading={config.loading}
+      />
     </div>
   );
 };

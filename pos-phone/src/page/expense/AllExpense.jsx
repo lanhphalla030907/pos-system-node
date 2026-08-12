@@ -20,6 +20,9 @@ import {
   FiGrid,
   FiList,
 } from "react-icons/fi";
+import { useAlert } from "../../components/common/Alert";
+import { useConfirm } from "../../hooks/useConfirm";
+import ConfirmModal from "../../components/common/ConfirmModal";
 
 const AllExpense = () => {
   const {
@@ -32,6 +35,9 @@ const AllExpense = () => {
     updateExpense,
     deleteExpense,
   } = useExpense();
+
+  const alert = useAlert();
+  const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
 
   const { expenseTypes, loadExpenseTypes } = useExpenseType();
 
@@ -51,8 +57,6 @@ const AllExpense = () => {
     expense_date: "",
   });
   const [formErrors, setFormErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState("");
-  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     loadAllData();
@@ -96,8 +100,6 @@ const AllExpense = () => {
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: "" });
     }
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
   const validateForm = () => {
@@ -114,10 +116,16 @@ const AllExpense = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setSubmitError("");
-    setSuccessMessage("");
 
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: editingExpense ? 'Updating expense...' : 'Creating expense...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       const expenseData = {
         expense_type_id: parseInt(formData.expense_type_id),
         name: formData.name.trim(),
@@ -129,11 +137,11 @@ const AllExpense = () => {
       let result;
       if (editingExpense) {
         result = await updateExpense(editingExpense.id, expenseData);
-        if (result) setSuccessMessage("Expense updated successfully!");
       } else {
         result = await createExpense(expenseData);
-        if (result) setSuccessMessage("Expense created successfully!");
       }
+
+      alert.hideAlert(loadingId);
 
       if (result) {
         setFormData({
@@ -144,29 +152,59 @@ const AllExpense = () => {
           expense_date: "",
         });
         await loadAllData();
-        setTimeout(() => {
-          setShowModal(false);
-          setEditingExpense(null);
-          setSuccessMessage("");
-        }, 1500);
+        alert.success(
+          editingExpense ? "Expense updated successfully!" : "Expense created successfully!",
+          {
+            description: `"${formData.name}" has been ${editingExpense ? 'updated' : 'added'}.`,
+          }
+        );
+        setShowModal(false);
+        setEditingExpense(null);
       }
     } catch (error) {
       console.error("Error saving expense:", error);
-      setSubmitError(error.message || "An error occurred");
+      alert.error("Failed to save expense", {
+        description: error.message || "Please try again.",
+      });
     }
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
+    const confirmed = await showConfirm({
+      title: "Delete Expense",
+      message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      confirmText: "Delete Expense",
+      cancelText: "Cancel",
+      type: "danger",
+      icon: FiTrash2,
+    });
 
+    if (!confirmed) return;
+
+    setConfirmLoading(true);
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: `Deleting "${name}"...`,
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       await deleteExpense(id);
       await loadAllData();
-      setSuccessMessage("Expense deleted successfully!");
-      setTimeout(() => setSuccessMessage(""), 2000);
+
+      alert.hideAlert(loadingId);
+      alert.success("Expense deleted successfully!", {
+        description: `"${name}" has been removed.`,
+      });
     } catch (error) {
       console.error("Error deleting expense:", error);
-      setSubmitError(error.message || "Failed to delete expense");
+      alert.error("Failed to delete expense", {
+        description: error.message || "Please try again.",
+      });
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -181,8 +219,6 @@ const AllExpense = () => {
     });
     setShowModal(true);
     setFormErrors({});
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
   const openCreateModal = () => {
@@ -196,8 +232,6 @@ const AllExpense = () => {
     });
     setShowModal(true);
     setFormErrors({});
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
   const closeModal = () => {
@@ -211,8 +245,6 @@ const AllExpense = () => {
       expense_date: "",
     });
     setFormErrors({});
-    setSubmitError("");
-    setSuccessMessage("");
   };
 
   const resetFilters = () => {
@@ -275,7 +307,7 @@ const AllExpense = () => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Total Transactions</p>
@@ -289,7 +321,7 @@ const AllExpense = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Total Amount</p>
@@ -303,7 +335,7 @@ const AllExpense = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 font-medium">Categories Used</p>
@@ -322,7 +354,7 @@ const AllExpense = () => {
         <ExpenseChart />
 
         {/* Main Card */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
           {/* Filters */}
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
             <div className="flex flex-wrap items-center gap-3">
@@ -371,28 +403,19 @@ const AllExpense = () => {
                 Reset
               </button>
               <button
-                onClick={() => loadAllData()}
+                onClick={() => {
+                  loadAllData();
+                  alert.success("Expenses refreshed!", {
+                    description: "Data has been updated.",
+                    duration: 2000,
+                  });
+                }}
                 className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <FiRefreshCw className={`w-4 h-4 ${expensesLoading ? "animate-spin" : ""}`} />
               </button>
             </div>
           </div>
-
-          {/* Success/Error Messages */}
-          {successMessage && (
-            <div className="mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3.5 flex items-start gap-3">
-              <FiCheck className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-emerald-700">{successMessage}</p>
-            </div>
-          )}
-
-          {submitError && (
-            <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg p-3.5 flex items-start gap-3">
-              <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{submitError}</p>
-            </div>
-          )}
 
           {/* Expenses Table */}
           {expensesLoading ? (
@@ -561,20 +584,6 @@ const AllExpense = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {successMessage && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3.5 flex items-start gap-3">
-                  <FiCheck className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-emerald-700">{successMessage}</p>
-                </div>
-              )}
-
-              {submitError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3.5 flex items-start gap-3">
-                  <FiAlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{submitError}</p>
-                </div>
-              )}
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -699,6 +708,18 @@ const AllExpense = () => {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={config.isOpen}
+        onClose={config.onCancel || (() => {})}
+        onConfirm={config.onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        icon={config.icon}
+        loading={config.loading}
+      />
     </div>
   );
 };

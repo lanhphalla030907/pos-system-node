@@ -164,7 +164,7 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
             </svg>
           </button>
           <button
-            onClick={() => onDelete(row.id)}
+            onClick={() => onDelete(row)}
             className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition"
             title="Delete product"
           >

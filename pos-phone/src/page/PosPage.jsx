@@ -1,4 +1,4 @@
-// pages/PosPage.jsx - Fixed with proper sticky positioning
+// pages/PosPage.jsx - Updated with Add to Cart Success
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import useProduct from '../hooks/useProduct';
@@ -11,6 +11,9 @@ import Receipt from '../components/pos/Receipt';
 import { prepareOrderItems, calculateCartTotals } from '../util/cartHelpers';
 import { FiRefreshCw, FiShoppingCart } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import { useAlert } from '../components/common/Alert';
+import { useConfirm } from '../hooks/useConfirm';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 const PosPage = () => {
   const { products, loading, loadProducts, refreshStock } = useProduct();
@@ -24,6 +27,9 @@ const PosPage = () => {
     selectCustomer 
   } = useCustomer();
 
+  const alert = useAlert();
+  const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
+
   const [cart, setCart] = useState([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
@@ -31,6 +37,7 @@ const PosPage = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [memberDiscount, setMemberDiscount] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [lastAddedProduct, setLastAddedProduct] = useState(null);
 
   const receiptRef = useRef();
 
@@ -42,7 +49,9 @@ const PosPage = () => {
     },
     onPrintError: (error) => {
       console.error('Print error:', error);
-      alert('Failed to print receipt. Please try again or print manually.');
+      alert.error('Failed to print receipt', {
+        description: 'Please try again or print manually.',
+      });
       setShowReceipt(false);
     }
   });
@@ -63,35 +72,66 @@ const PosPage = () => {
     }
   }, [selectedCustomer]);
 
+  // Clear last added product after 3 seconds
+  useEffect(() => {
+    if (lastAddedProduct) {
+      const timer = setTimeout(() => {
+        setLastAddedProduct(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastAddedProduct]);
+
   const addToCart = useCallback((product) => {
     if (!product) return;
     
     const stock = parseInt(product?.qty) || 0;
     if (stock === 0) {
-      alert('Product is out of stock!');
+      alert.warning('Product is out of stock!', {
+        description: 'Please choose another product.',
+      });
       return;
     }
+    
+    let added = false;
+    let productName = product.name || 'Product';
     
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item?.id === product.id);
       if (existingItem) {
         if (existingItem.quantity >= stock) {
-          alert(`Only ${stock} units available in stock!`);
+          alert.warning('Not enough stock!', {
+            description: `Only ${stock} units available in stock.`,
+          });
           return prevCart;
         }
+        added = true;
+        setLastAddedProduct(product);
+        // Show success alert for adding more quantity
+        alert.success(`Added another "${productName}" to cart!`, {
+          description: `Now ${existingItem.quantity + 1} in cart.`,
+          duration: 2000,
+        });
         return prevCart.map(item =>
           item?.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
+      added = true;
+      setLastAddedProduct(product);
+      // Show success alert for new product
+      alert.success(`"${productName}" added to cart!`, {
+        description: `Price: $${parseFloat(product.price || 0).toFixed(2)} | Stock: ${stock - 1} remaining`,
+        duration: 2500,
+      });
       return [...prevCart, { ...product, quantity: 1 }];
     });
     
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < 768 && added) {
       setIsCartOpen(true);
     }
-  }, []);
+  }, [alert]);
 
   const removeFromCart = useCallback((productId) => {
     setCart(prevCart => prevCart.filter(item => item?.id !== productId));
@@ -107,7 +147,9 @@ const PosPage = () => {
     const stock = parseInt(product?.qty) || 0;
     
     if (newQuantity > stock) {
-      alert(`Only ${stock} units available in stock!`);
+      alert.warning('Not enough stock!', {
+        description: `Only ${stock} units available in stock.`,
+      });
       return;
     }
     
@@ -118,22 +160,39 @@ const PosPage = () => {
           : item
       )
     );
-  }, [cart, removeFromCart]);
+  }, [cart, removeFromCart, alert]);
 
-  const clearCart = useCallback(() => {
-    if (window.confirm('Clear all items from cart?')) {
-      setCart([]);
-      setIsCartOpen(false);
-    }
-  }, []);
+  const clearCart = useCallback(async () => {
+    if (cart.length === 0) return;
+
+    const confirmed = await showConfirm({
+      title: 'Clear Cart',
+      message: 'Are you sure you want to clear all items from the cart?',
+      confirmText: 'Clear Cart',
+      cancelText: 'Cancel',
+      type: 'warning',
+      icon: FiShoppingCart,
+    });
+
+    if (!confirmed) return;
+
+    setCart([]);
+    setIsCartOpen(false);
+    alert.success('Cart cleared successfully!', {
+      description: 'All items have been removed.',
+      duration: 2000,
+    });
+  }, [cart, showConfirm, alert]);
 
   const openCheckout = useCallback(() => {
     if (cart.length === 0) {
-      alert('Cart is empty!');
+      alert.warning('Cart is empty!', {
+        description: 'Please add products to the cart.',
+      });
       return;
     }
     setIsCheckoutOpen(true);
-  }, [cart]);
+  }, [cart, alert]);
 
   const closeCheckout = useCallback(() => {
     setIsCheckoutOpen(false);
@@ -156,7 +215,17 @@ const PosPage = () => {
     };
 
     try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: 'Processing order...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
+
       const res = await saveOrder(payload);
+
+      alert.hideAlert(loadingId);
       
       if (res?.success) {
         const receiptData = {
@@ -197,17 +266,25 @@ const PosPage = () => {
         
         await refreshStock();
         
+        alert.success('Order created successfully!', {
+          description: `Order #${receiptData.order_no} has been created.`,
+        });
+
         setTimeout(() => {
           printReceipt();
         }, 500);
       } else {
-        alert(res?.message || 'Failed to create order. Please try again.');
+        alert.error('Failed to create order', {
+          description: res?.message || 'Please try again.',
+        });
       }
     } catch (error) {
       console.error('Error creating order:', error);
-      alert('An error occurred while processing the order. Please try again.');
+      alert.error('An error occurred while processing the order', {
+        description: error.message || 'Please try again.',
+      });
     }
-  }, [cart, selectedCustomer, memberDiscount, saveOrder, refreshStock, printReceipt]);
+  }, [cart, selectedCustomer, memberDiscount, saveOrder, refreshStock, printReceipt, alert]);
 
   const toggleCart = () => {
     setIsCartOpen(!isCartOpen);
@@ -241,10 +318,18 @@ const PosPage = () => {
             </span>
           )}
           <Link to="/today-sale">
-          <button className=' px-2 sm:px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-600 text-xs sm:text-sm font-medium rounded-lg border border-gray-200 transition-colors' >Today's Order</button>
+            <button className='px-2 sm:px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-600 text-xs sm:text-sm font-medium rounded-lg border border-gray-200 transition-colors'>
+              Today's Order
+            </button>
           </Link>
           <button
-            onClick={() => loadProducts({ page: 1, limit: 100 })}
+            onClick={() => {
+              loadProducts({ page: 1, limit: 100 });
+              alert.success('Products refreshed!', {
+                description: 'Product list has been updated.',
+                duration: 2000,
+              });
+            }}
             className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-600 text-xs sm:text-sm font-medium rounded-lg border border-gray-200 transition-colors"
           >
             <FiRefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${loading ? "animate-spin" : ""}`} />
@@ -338,6 +423,20 @@ const PosPage = () => {
           />
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={config.isOpen}
+        onClose={config.onCancel || (() => {})}
+        onConfirm={config.onConfirm}
+        title={config.title}
+        message={config.message}
+        confirmText={config.confirmText}
+        cancelText={config.cancelText}
+        type={config.type}
+        icon={config.icon}
+        loading={config.loading}
+      />
     </div>
   );
 };

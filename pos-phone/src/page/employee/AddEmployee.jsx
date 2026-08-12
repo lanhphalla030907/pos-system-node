@@ -1,14 +1,17 @@
-// pages/AddEmployee.jsx
+// pages/AddEmployee.jsx - With Alert
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEmployee } from '../../hooks/useEmployee';
 import useRole from '../../hooks/useRole';
 import { Config } from '../../util/config';
+import { useAlert } from '../../components/common/Alert';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+
+  const alert = useAlert();
 
   const { addEmployee, editEmployee, loadEmployeeById, loading } = useEmployee();
   const { roles, loading: rolesLoading, loadRoles } = useRole();
@@ -40,7 +43,6 @@ const AddEmployee = () => {
     }
   }, [loadRoles]);
 
-  // Load employee data if editing
   useEffect(() => {
     if (isEdit) {
       loadEmployee();
@@ -69,7 +71,6 @@ const AddEmployee = () => {
         });
       
         if (data.image) {
-          // If image is a URL, use it directly
           const imageUrl = data.image.startsWith('http') 
             ? data.image 
             : `${Config.base_url2}uploads/employee/${data.image}`;
@@ -78,11 +79,12 @@ const AddEmployee = () => {
       }
     } catch (error) {
       console.error('Error loading employee:', error);
-      alert('Failed to load employee data');
+      alert.error('Failed to load employee data', {
+        description: 'Please try again.',
+      });
     }
   };
 
-  // Handle input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -91,56 +93,60 @@ const AddEmployee = () => {
     }));
   };
 
-  // ✅ Fix: Handle image change with proper preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file type
       const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       if (!validTypes.includes(file.type)) {
-        alert('Please upload a valid image file (JPG, PNG, GIF, WEBP)');
+        alert.warning('Invalid image format', {
+          description: 'Please upload JPG, PNG, GIF, or WEBP.',
+        });
         e.target.value = '';
         return;
       }
 
-      // Validate file size (2MB)
       if (file.size > 2 * 1024 * 1024) {
-        alert('Image size must be less than 2MB');
+        alert.warning('Image too large', {
+          description: 'Image size must be less than 2MB.',
+        });
         e.target.value = '';
         return;
       }
 
       setImageFile(file);
       
-      // ✅ Create preview URL
       const reader = new FileReader();
       reader.onload = (event) => {
         setImagePreview(event.target.result);
       };
       reader.onerror = (error) => {
         console.error('Error reading file:', error);
-        alert('Failed to read image file');
+        alert.error('Failed to read image', {
+          description: 'Please try again.',
+        });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Handle form submit with FormData
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert('Employee name is required');
+      alert.warning('Employee name is required', {
+        description: 'Please enter a name.',
+      });
       return;
     }
 
     if (!formData.role_id) {
-      alert('Please select a role');
+      alert.warning('Role is required', {
+        description: 'Please select a role.',
+      });
       return;
     }
 
     const submitData = new FormData();
-
     Object.keys(formData).forEach((key) => {
       if (formData[key] !== null && formData[key] !== undefined) {
         submitData.append(key, formData[key]);
@@ -151,22 +157,44 @@ const AddEmployee = () => {
       submitData.append('image', imageFile);
     }
 
-    let res;
-    if (isEdit) {
-      res = await editEmployee(id, submitData);
-    } else {
-      res = await addEmployee(submitData);
-    }
+    try {
+      const loadingId = alert.showAlert({
+        type: 'info',
+        message: isEdit ? 'Updating employee...' : 'Creating employee...',
+        description: 'Please wait...',
+        duration: 0,
+        closable: false,
+      });
 
-    if (res?.success) {
-      alert(isEdit ? 'Employee updated successfully!' : 'Employee created successfully!');
-      navigate('/employees');
-    } else {
-      alert(res?.message || 'Failed to save employee');
+      let res;
+      if (isEdit) {
+        res = await editEmployee(id, submitData);
+      } else {
+        res = await addEmployee(submitData);
+      }
+
+      alert.hideAlert(loadingId);
+
+      if (res?.success) {
+        alert.success(
+          isEdit ? 'Employee updated successfully!' : 'Employee created successfully!',
+          {
+            description: `"${formData.name}" has been ${isEdit ? 'updated' : 'added'}.`,
+          }
+        );
+        navigate('/employees');
+      } else {
+        alert.error('Failed to save employee', {
+          description: res?.message || 'Please try again.',
+        });
+      }
+    } catch (error) {
+      alert.error('An error occurred while saving', {
+        description: error.message || 'Please try again later.',
+      });
     }
   };
 
-  // ✅ Component to display image preview
   const ImagePreview = ({ src, name }) => {
     if (src) {
       return (
@@ -185,53 +213,48 @@ const AddEmployee = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">
+              <h1 className="text-2xl font-semibold text-gray-800 tracking-tight">
                 {isEdit ? 'Edit Employee' : 'Add New Employee'}
               </h1>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 mt-0.5">
                 {isEdit ? 'Update employee information' : 'Create a new employee'}
               </p>
             </div>
             <button
               onClick={() => navigate('/employees')}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
             >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
               Cancel
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* ✅ Image Upload with Preview */}
+            {/* Image Upload */}
             <div className="flex items-center gap-6">
               <div className="relative">
-                {/* Show preview or initials */}
                 <ImagePreview src={imagePreview} name={formData.name} />
-                
-                {/* Upload button overlay */}
-                <label className="absolute bottom-0 right-0 bg-gray-800 text-white p-1.5 rounded-full cursor-pointer hover:bg-gray-700 transition shadow-lg border-2 border-white">
+                <label className="absolute bottom-0 right-0 bg-black text-white p-1.5 rounded-full cursor-pointer hover:bg-gray-800 transition shadow-lg border-2 border-white">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                  />
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                 </label>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Upload employee photo</p>
                 <p className="text-xs text-gray-400">JPG, PNG, GIF up to 2MB</p>
                 {imageFile && (
-                  <p className="text-xs text-green-600 mt-1">
+                  <p className="text-xs text-emerald-600 mt-1">
                     ✅ {imageFile.name} ({(imageFile.size / 1024).toFixed(1)} KB)
                   </p>
                 )}
@@ -239,9 +262,8 @@ const AddEmployee = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Code */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Employee Code
                 </label>
                 <input
@@ -249,38 +271,36 @@ const AddEmployee = () => {
                   name="code"
                   value={formData.code}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none bg-gray-50"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-gray-50"
                   placeholder="Auto-generated"
                   disabled
                 />
               </div>
 
-              {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name *
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                   placeholder="Enter full name..."
                   required
                 />
               </div>
 
-              {/* Gender */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Gender
                 </label>
                 <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none bg-white"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                 >
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -288,9 +308,8 @@ const AddEmployee = () => {
                 </select>
               </div>
 
-              {/* Date of Birth */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Date of Birth
                 </label>
                 <input
@@ -298,13 +317,12 @@ const AddEmployee = () => {
                   name="dob"
                   value={formData.dob}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                 />
               </div>
 
-              {/* Phone */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Phone
                 </label>
                 <input
@@ -312,14 +330,13 @@ const AddEmployee = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                   placeholder="012 345 678"
                 />
               </div>
 
-              {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Email
                 </label>
                 <input
@@ -327,14 +344,13 @@ const AddEmployee = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                   placeholder="employee@company.com"
                 />
               </div>
 
-              {/* Address */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Address
                 </label>
                 <input
@@ -342,21 +358,20 @@ const AddEmployee = () => {
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                   placeholder="Enter address..."
                 />
               </div>
 
-              {/* Role */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role *
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Role <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="role_id"
                   value={formData.role_id}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none bg-white"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                   required
                 >
                   <option value="">-- Select Role --</option>
@@ -374,9 +389,8 @@ const AddEmployee = () => {
                 </select>
               </div>
 
-              {/* Salary */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Salary
                 </label>
                 <input
@@ -384,15 +398,14 @@ const AddEmployee = () => {
                   name="salary"
                   value={formData.salary}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                   placeholder="0.00"
                   step="0.01"
                 />
               </div>
 
-              {/* Hire Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Hire Date
                 </label>
                 <input
@@ -400,29 +413,27 @@ const AddEmployee = () => {
                   name="hire_date"
                   value={formData.hire_date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                 />
               </div>
 
-              {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Status
                 </label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none bg-white"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                 >
                   <option value={1}>Active</option>
                   <option value={0}>Inactive</option>
                 </select>
               </div>
 
-              {/* User ID (optional) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   User Account
                 </label>
                 <input
@@ -430,7 +441,7 @@ const AddEmployee = () => {
                   name="user_id"
                   value={formData.user_id}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
                   placeholder="Link to user account (optional)"
                 />
               </div>
@@ -441,13 +452,13 @@ const AddEmployee = () => {
               <button
                 type="button"
                 onClick={() => navigate('/employees')}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                className="px-5 py-2.5 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition flex items-center gap-2 disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading}
               >
                 {loading ? (

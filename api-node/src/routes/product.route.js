@@ -41,7 +41,7 @@ module.exports = (app) => {
   app.delete(
     "/api/product/:id",
     validate_token(),
-    checkPermission("product.delete"),
+     checkPermission("product.delete"),
     deleteProduct,
   );
 };
