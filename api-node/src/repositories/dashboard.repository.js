@@ -167,9 +167,7 @@ exports.getProfitChart = async (period = "monthly") => {
       break;
 
     default:
-      throw new Error(
-        "Invalid period. Use daily, weekly, monthly, or yearly"
-      );
+      throw new Error("Invalid period. Use daily, weekly, monthly, or yearly");
   }
 
   const sql = `
@@ -227,6 +225,90 @@ exports.getProfitChart = async (period = "monthly") => {
   `;
 
   const [rows] = await db.query(sql);
+
+  return rows;
+};
+exports.getPaymentSummary = async (query = {}) => {
+  const { period = "today", date_from, date_to } = query;
+
+  let where = `
+    WHERE 1 = 1
+  `;
+
+  const params = [];
+
+  // Today
+  if (period === "today") {
+    where += `
+      AND DATE(op.create_at) = CURDATE()
+    `;
+  }
+
+  // Yesterday
+  else if (period === "yesterday") {
+    where += `
+      AND DATE(op.create_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+    `;
+  }
+
+  // This week
+  else if (period === "week") {
+    where += `
+      AND YEARWEEK(op.create_at, 1) = YEARWEEK(CURDATE(), 1)
+    `;
+  }
+
+  // This month
+  else if (period === "month") {
+    where += `
+      AND YEAR(op.create_at) = YEAR(CURDATE())
+      AND MONTH(op.create_at) = MONTH(CURDATE())
+    `;
+  }
+
+  // This year
+  else if (period === "year") {
+    where += `
+      AND YEAR(op.create_at) = YEAR(CURDATE())
+    `;
+  }
+
+  // Custom date range
+  else if (period === "custom") {
+    if (date_from) {
+      where += `
+        AND DATE(op.create_at) >= ?
+      `;
+      params.push(date_from);
+    }
+    if (date_to) {
+      where += `
+        AND DATE(op.create_at) <= ?
+      `;
+      params.push(date_to);
+    }
+  }
+  const [rows] = await db.query(
+    `
+    SELECT
+      pm.id AS payment_method_id,
+      pm.name,
+      pm.type,
+      COALESCE(SUM(op.amount), 0) AS amount
+    FROM order_payment op
+    INNER JOIN payment_method pm
+      ON pm.id = op.payment_method_id
+    INNER JOIN orders o
+      ON o.id = op.order_id
+    ${where}
+    GROUP BY
+      pm.id,
+      pm.name,
+      pm.type
+    ORDER BY amount DESC
+    `,
+    params,
+  );
 
   return rows;
 };

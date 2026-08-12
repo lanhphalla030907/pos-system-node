@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency, formatDate } from '../../util/orderHelper';
+import { formatDate } from '../../util/orderHelper';
 
 const Receipt = React.forwardRef(({ order, shopInfo = {} }, ref) => {
   const shop = {
@@ -141,9 +141,21 @@ const Receipt = React.forwardRef(({ order, shopInfo = {} }, ref) => {
             <span className="text-gray-600">Change</span>
             <span className="text-green-600">${safeFormat(change)}</span>
           </div>
-          <div className="flex justify-between text-[10px]">
-            <span className="text-gray-600">Payment</span>
-            <span className="uppercase font-bold text-blue-600">{order.payment_method || 'Cash'}</span>
+          <div className="text-[10px] space-y-0.5 border-t border-dashed border-gray-200 pt-1">
+            <div className="text-gray-600 font-bold mb-0.5">Payment</div>
+            {(order.payments && order.payments.length > 0) ? (
+              order.payments.map((payment, index) => (
+                <div key={index} className="flex justify-between">
+                  <span>{payment.payment_method}</span>
+                  <span className="uppercase font-bold text-blue-600">${safeFormat(payment.amount)}</span>
+                </div>
+              ))
+            ) : (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Payment</span>
+                <span className="uppercase font-bold text-blue-600">{order.payment_method || 'Cash'}</span>
+              </div>
+            )}
           </div>
         </div>
 

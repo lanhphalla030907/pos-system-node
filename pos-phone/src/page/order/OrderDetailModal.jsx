@@ -86,7 +86,21 @@ const OrderDetailModal = ({ order, onClose }) => {
                 <FiCreditCard className="w-3.5 h-3.5" />
                 <p className="text-xs font-medium uppercase tracking-wider">Payment</p>
               </div>
-              <p className="font-semibold text-gray-800 text-sm uppercase">{order.payment_method || 'Cash'}</p>
+              {order.payments && order.payments.length > 0 ? (
+                <div className="space-y-0.5">
+                  {order.payments.map((payment, index) => (
+                    <p key={index} className="font-semibold text-gray-800 text-sm">
+                      {payment.payment_method}
+                      <span className="text-gray-500 font-normal">
+                        {' '}${Number(payment.amount || 0).toFixed(2)}
+                        {payment.reference_no ? ` (${payment.reference_no})` : ''}
+                      </span>
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="font-semibold text-gray-800 text-sm uppercase">{order.payment_method || 'Cash'}</p>
+              )}
             </div>
             <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
               <div className="flex items-center gap-2 text-gray-400 mb-1">

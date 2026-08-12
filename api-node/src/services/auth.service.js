@@ -35,6 +35,9 @@ exports.login = async (username, password, req) => {
     await loginHistory.loginFailed(null, "Username not found", req);
     throw new Error("Username not found");
   }
+  if (!user.is_active) {
+  throw new AppError("Your account is inactive", 403);
+}
   const isCorrectPw = bcrypt.compareSync(password, user.password);
   // Password incorrect
   if (!isCorrectPw) {

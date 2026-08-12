@@ -5,6 +5,7 @@ import {
   getSalesChart,
   getProfitChart,
   getRecentLoginActivity,
+  getPaymentSummary, 
 } from '../api/dashboardApi';
 
 export const useDashboard = () => {
@@ -12,6 +13,7 @@ export const useDashboard = () => {
   const [salesChart, setSalesChart] = useState([]);
   const [profitChart, setProfitChart] = useState([]);
   const [recentLogins, setRecentLogins] = useState([]);
+  const [paymentSummary, setPaymentSummary] = useState(null); //  Add state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [chartPeriod, setChartPeriod] = useState('monthly');
@@ -96,6 +98,26 @@ export const useDashboard = () => {
     }
   }, []);
 
+  //  Load payment summary
+  const loadPaymentSummary = useCallback(async (filter = {}) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await getPaymentSummary(filter);
+      if (res?.success) {
+        setPaymentSummary(res.data);
+      }
+      return res;
+    } catch (error) {
+      console.error('Error loading payment summary:', error);
+      setError(error.message);
+      setPaymentSummary(null);
+      return { success: false, message: error.message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Load all dashboard data with period
   const loadDashboard = useCallback(async (period = 'monthly') => {
     try {
@@ -106,6 +128,7 @@ export const useDashboard = () => {
         loadSalesChart(period),
         loadProfitChart(period),
         loadRecentLogins(10),
+        loadPaymentSummary({ period }), 
       ]);
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -113,7 +136,7 @@ export const useDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [loadSummary, loadSalesChart, loadProfitChart, loadRecentLogins]);
+  }, [loadSummary, loadSalesChart, loadProfitChart, loadRecentLogins, loadPaymentSummary]);
 
   // Change chart period and reload
   const changeChartPeriod = useCallback(async (period) => {
@@ -121,8 +144,9 @@ export const useDashboard = () => {
     await Promise.all([
       loadSalesChart(period),
       loadProfitChart(period),
+      loadPaymentSummary({ period }), 
     ]);
-  }, [loadSalesChart, loadProfitChart]);
+  }, [loadSalesChart, loadProfitChart, loadPaymentSummary]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -133,6 +157,7 @@ export const useDashboard = () => {
     salesChart,
     profitChart,
     recentLogins,
+    paymentSummary, 
     loading,
     error,
     chartPeriod,
@@ -140,6 +165,7 @@ export const useDashboard = () => {
     loadSalesChart,
     loadProfitChart,
     loadRecentLogins,
+    loadPaymentSummary, 
     loadDashboard,
     changeChartPeriod,
     clearError,

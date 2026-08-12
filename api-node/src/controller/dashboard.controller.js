@@ -98,3 +98,22 @@ exports.getRecentLoginActivity = async (req, res) => {
     });
   }
 };
+exports.getPaymentSummary = async (req, res) => {
+  try {
+    const data = await dashboardService.getPaymentSummary(
+      req.query,
+    );
+    res.json({
+      success: true,
+      message: "Get payment summary successfully",
+      data,
+    });
+  } catch (err) {
+    console.error("Payment summary error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

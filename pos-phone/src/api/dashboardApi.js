@@ -20,3 +20,21 @@ export const getProfitChart = async (period = "monthly") => {
 export const getRecentLoginActivity = async (limit = 10) => {
   return await request(`dashboard/recent-login?limit=${limit}`, "get");
 };
+export const getPaymentSummary = async (filter = {}) => {
+  const params = new URLSearchParams();
+
+  Object.keys(filter).forEach((key) => {
+    if (
+      filter[key] !== "" &&
+      filter[key] !== undefined &&
+      filter[key] !== null
+    ) {
+      params.append(key, filter[key]);
+    }
+  });
+
+  const queryString = params.toString();
+  const url = queryString ? `dashboard/payment-summary?${queryString}` : "dashboard/payment-summary";
+
+  return await request(url, "get");
+};

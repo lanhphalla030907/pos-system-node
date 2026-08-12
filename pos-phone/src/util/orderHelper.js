@@ -96,5 +96,15 @@ export const getPaymentBadge = (method) => {
     debit_card: { label: 'Debit Card', color: 'bg-purple-100 text-purple-800' },
     mobile_payment: { label: 'Mobile Payment', color: 'bg-indigo-100 text-indigo-800' },
   };
-  return methods[method?.toLowerCase()] || methods.cash;
+
+  if (!method) return methods.cash;
+
+  const parts = String(method).split(',').map(s => s.trim()).filter(Boolean);
+
+  if (parts.length > 1) {
+    return { label: 'Multiple', color: 'bg-indigo-100 text-indigo-800' };
+  }
+
+  const single = parts[0] || method;
+  return methods[single.toLowerCase()] || { label: single, color: 'bg-gray-100 text-gray-800' };
 };

@@ -1,13 +1,25 @@
 const { db } = require("../util/helper");
+const AppError = require("../util/AppError");
+
+const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
 exports.create = async (data, user) => {
   const connection = await db.getConnection();
+
   try {
     await connection.beginTransaction();
+    // BASIC VALIDATION
+    if (!Array.isArray(data.items) || data.items.length === 0) {
+      throw new AppError("Order items are required", 400);
+    }
+
+    if (!Array.isArray(data.payments) || data.payments.length === 0) {
+      throw new AppError("At least one payment is required", 400);
+    }
 
     let memberDiscount = 0;
     let customerType = "regular";
-
+    // VALIDATE CUSTOMER
     if (data.customer_id) {
       const [customerRows] = await connection.query(
         `
@@ -19,28 +31,22 @@ exports.create = async (data, user) => {
       );
 
       if (customerRows.length === 0) {
-        throw new Error("Customer not found");
+        throw new AppError("Customer not found", 400);
       }
 
       memberDiscount = Number(customerRows[0].discount || 0);
       customerType = customerRows[0].type || "regular";
+
+      // Validate customer discount
+      if (memberDiscount < 0 || memberDiscount > 100) {
+        throw new AppError("Customer discount must be between 0 and 100", 400);
+      }
     }
+    // CREATE TEMP ORDER
+    const tempOrderNo = `TMP-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 10)}`;
 
-    // Create order number
-    const [rows] = await connection.query(`
-      SELECT order_no
-      FROM orders
-      ORDER BY id DESC
-      LIMIT 1
-    `);
-
-    let orderNo = "ORD-000001";
-    if (rows.length > 0) {
-      const last = parseInt(rows[0].order_no.replace("ORD-", ""));
-      orderNo = `ORD-${String(last + 1).padStart(6, "0")}`;
-    }
-
-    // Insert order
     const [orderResult] = await connection.query(
       `
       INSERT INTO orders
@@ -59,43 +65,128 @@ exports.create = async (data, user) => {
         :order_no,
         :customer_id,
         :user_id,
-        :total_amount,
-        :paid,
-        :payment_method,
+        0,
+        0,
+        "",
         :remark,
         :create_by
       )
       `,
       {
-        order_no: orderNo,
+        order_no: tempOrderNo,
         customer_id: data.customer_id || null,
         user_id: user.data.id,
-        total_amount: 0,
-        paid: data.paid,
-        payment_method: data.payment_method,
         remark: data.remark || "",
         create_by: user.data.id,
       },
     );
-    const orderId = orderResult.insertId;
 
+    const orderId = orderResult.insertId;
+    // SAFE ORDER NUMBER
+    const orderNo = `ORD-${String(orderId).padStart(6, "0")}`;
+
+    await connection.query(
+      `
+      UPDATE orders
+      SET order_no = ?
+      WHERE id = ?
+      `,
+      [orderNo, orderId],
+    );
+    // CALCULATE ORDER
     let totalAmount = 0;
     let totalProductDiscount = 0;
     let totalMemberDiscount = 0;
+    let subtotal = 0;
 
     for (const item of data.items) {
-      const subtotal = item.qty * item.price;
-      const productDiscount = parseFloat(item.discount) || 0;
-      const productDiscountAmount = (subtotal * productDiscount) / 100;
-      const afterProductDiscount = subtotal - productDiscountAmount;
-      const memberDiscountAmount =
-        (afterProductDiscount * memberDiscount) / 100;
-      const finalTotal =
-        subtotal - productDiscountAmount - memberDiscountAmount;
+      const productId = Number(item.product_id);
+      const qty = Number(item.qty);
+
+      if (!Number.isInteger(productId) || productId <= 0) {
+        throw new AppError("Invalid product ID", 400);
+      }
+
+      if (!Number.isInteger(qty) || qty <= 0) {
+        throw new AppError(
+          `Product ${productId} quantity must be greater than 0`,
+          400,
+        );
+      }
+
+      // LOCK PRODUCT ROW
+
+      const [productRows] = await connection.query(
+        `
+        SELECT id, qty, price
+        FROM product
+        WHERE id = ?
+        FOR UPDATE
+        `,
+        [productId],
+      );
+
+      if (productRows.length === 0) {
+        throw new AppError(`Product ${productId} not found`, 400);
+      }
+
+      const product = productRows[0];
+
+      const stockQty = Number(product.qty);
+
+      // STOCK VALIDATION
+
+      if (stockQty < qty) {
+        throw new AppError(`Product ${productId} out of stock`, 400);
+      }
+
+      // USE DATABASE PRICE
+      // NEVER TRUST CLIENT PRICE
+
+      const price = Number(product.price) || 0;
+
+      if (price < 0) {
+        throw new AppError(`Product ${productId} has invalid price`, 400);
+      }
+
+      // PRODUCT DISCOUNT
+
+      const productDiscount = Number(item.discount) || 0;
+
+      if (productDiscount < 0 || productDiscount > 100) {
+        throw new AppError(
+          `Product ${productId} discount must be between 0 and 100`,
+          400,
+        );
+      }
+
+      // CALCULATE DISCOUNTS
+
+      const subtotalItem = round2(qty * price);
+
+      const productDiscountAmount = round2(
+        (subtotalItem * productDiscount) / 100,
+      );
+
+      const afterProductDiscount = subtotalItem - productDiscountAmount;
+
+      const memberDiscountAmount = round2(
+        (afterProductDiscount * memberDiscount) / 100,
+      );
+
+      const finalTotal = round2(
+        subtotalItem - productDiscountAmount - memberDiscountAmount,
+      );
+
+      subtotal += subtotalItem;
 
       totalAmount += finalTotal;
+
       totalProductDiscount += productDiscountAmount;
+
       totalMemberDiscount += memberDiscountAmount;
+
+      // CREATE ORDER DETAIL
 
       await connection.query(
         `
@@ -124,32 +215,17 @@ exports.create = async (data, user) => {
         `,
         {
           order_id: orderId,
-          product_id: item.product_id,
-          qty: item.qty,
-          price: item.price,
+          product_id: productId,
+          qty: qty,
+          price: price,
           discount: productDiscount,
           member_discount: memberDiscount,
-          discount_amount: productDiscountAmount + memberDiscountAmount,
+          discount_amount: round2(productDiscountAmount + memberDiscountAmount),
           total: finalTotal,
         },
       );
 
-      const [product] = await connection.query(
-        `
-        SELECT qty
-        FROM product
-        WHERE id = ?
-        `,
-        [item.product_id],
-      );
-
-      if (product.length === 0) {
-        throw new Error(`Product ${item.product_id} not found`);
-      }
-
-      if (product[0].qty < item.qty) {
-        throw new Error(`Product ${item.product_id} out of stock`);
-      }
+      // UPDATE STOCK
 
       await connection.query(
         `
@@ -157,11 +233,15 @@ exports.create = async (data, user) => {
         SET qty = qty - ?
         WHERE id = ?
         `,
-        [item.qty, item.product_id],
+        [qty, productId],
       );
     }
-
-    // Update orders total_amount
+    // FINAL ROUNDING
+    totalAmount = round2(totalAmount);
+    totalProductDiscount = round2(totalProductDiscount);
+    totalMemberDiscount = round2(totalMemberDiscount);
+    subtotal = round2(subtotal);
+    // UPDATE ORDER TOTAL
     await connection.query(
       `
       UPDATE orders
@@ -170,8 +250,106 @@ exports.create = async (data, user) => {
       `,
       [totalAmount, orderId],
     );
+    // VALIDATE PAYMENTS
+    const paymentRows = [];
 
-    // Update customer
+    let totalPaid = 0;
+
+    for (const payment of data.payments) {
+      const paymentMethodId = Number(payment.payment_method_id);
+
+      if (!Number.isInteger(paymentMethodId) || paymentMethodId <= 0) {
+        throw new AppError("Invalid payment method", 400);
+      }
+
+      const amount = Number(payment.amount);
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new AppError("Payment amount must be greater than 0", 400);
+      }
+
+      const [methodRows] = await connection.query(
+        `
+        SELECT
+          id,
+          name,
+          type,
+          is_active
+        FROM payment_method
+        WHERE id = ?
+        `,
+        [paymentMethodId],
+      );
+
+      if (methodRows.length === 0) {
+        throw new AppError("Payment method not found", 400);
+      }
+
+      const method = methodRows[0];
+
+      if (!Number(method.is_active)) {
+        throw new AppError(`Payment method "${method.name}" is inactive`, 400);
+      }
+
+      const roundedAmount = round2(amount);
+
+      totalPaid = round2(totalPaid + roundedAmount);
+
+      paymentRows.push({
+        payment_method_id: paymentMethodId,
+        amount: roundedAmount,
+        reference_no: payment.reference_no || null,
+        remark: payment.remark || null,
+        method_name: method.name,
+        method_type: method.type,
+      });
+    }
+    // PAYMENT TOTAL MUST MATCH ORDER TOTAL
+    totalPaid = round2(totalPaid);
+
+    if (totalPaid < totalAmount) {
+      throw new AppError("Payment amount is not enough", 400);
+    }
+    // CREATE ORDER PAYMENTS
+    for (const payment of paymentRows) {
+      await connection.query(
+        `
+        INSERT INTO order_payment
+        (
+          order_id,
+          payment_method_id,
+          amount,
+          reference_no,
+          remark,
+          create_by
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [
+          orderId,
+          payment.payment_method_id,
+          payment.amount,
+          payment.reference_no,
+          payment.remark,
+          user.data.id,
+        ],
+      );
+    }
+    const paymentMethodSummary = paymentRows
+      .map((payment) => payment.method_name)
+      .join(", ");
+
+    await connection.query(
+      `
+      UPDATE orders
+      SET
+        paid = ?,
+        payment_method = ?
+      WHERE id = ?
+      `,
+      [totalPaid, paymentMethodSummary, orderId],
+    );
+    // UPDATE CUSTOMER
     if (data.customer_id) {
       await connection.query(
         `
@@ -182,17 +360,18 @@ exports.create = async (data, user) => {
         [totalAmount, data.customer_id],
       );
 
-      const [customer] = await connection.query(
+      const [customerRows] = await connection.query(
         `
-        SELECT total_spent
-        FROM customer
-        WHERE id = ?
-        `,
+          SELECT total_spent
+          FROM customer
+          WHERE id = ?
+          `,
         [data.customer_id],
       );
 
       let newType = "regular";
-      const totalSpent = Number(customer[0]?.total_spent || 0);
+
+      const totalSpent = Number(customerRows[0]?.total_spent || 0);
 
       if (totalSpent >= 1000) {
         newType = "vip";
@@ -211,18 +390,48 @@ exports.create = async (data, user) => {
         );
       }
     }
-
+    // COMMIT
     await connection.commit();
-
+    // RESPONSE
     return {
       id: orderId,
       order_no: orderNo,
+
+      subtotal,
+
       total_amount: totalAmount,
+
+      paid: totalPaid,
+
+      remaining: round2(totalAmount - totalPaid),
+
       total_product_discount: totalProductDiscount,
+
       total_member_discount: totalMemberDiscount,
-      total_discount: totalProductDiscount + totalMemberDiscount,
+
+      total_discount: round2(totalProductDiscount + totalMemberDiscount),
+
       customer_id: data.customer_id || null,
+
       discount_applied: memberDiscount,
+
+      cashier: user.data.name || null,
+
+      create_at: new Date(),
+
+      payments: paymentRows.map((payment) => ({
+        payment_method_id: payment.payment_method_id,
+
+        payment_method: payment.method_name,
+
+        type: payment.method_type,
+
+        amount: payment.amount,
+
+        reference_no: payment.reference_no,
+
+        remark: payment.remark,
+      })),
     };
   } catch (err) {
     await connection.rollback();
@@ -272,7 +481,12 @@ exports.getAll = async (filter) => {
       u.name AS user_name,
       o.total_amount,
       o.paid,
-      o.payment_method,
+      COALESCE(NULLIF((
+        SELECT GROUP_CONCAT(pm.name ORDER BY op.id SEPARATOR ', ')
+        FROM order_payment op
+        INNER JOIN payment_method pm ON pm.id = op.payment_method_id
+        WHERE op.order_id = o.id
+      ), ''), o.payment_method) AS payment_method,
       o.create_at
     FROM orders o
     LEFT JOIN customer c ON o.customer_id = c.id
@@ -356,17 +570,33 @@ exports.getById = async (id) => {
   const orderData = order[0];
   const items = details;
 
+  const [payments] = await db.query(
+    `
+    SELECT
+      op.id,
+      op.payment_method_id,
+      pm.name AS payment_method,
+      pm.type,
+      op.amount,
+      op.reference_no,
+      op.remark
+    FROM order_payment op
+    INNER JOIN payment_method pm
+      ON pm.id = op.payment_method_id
+    WHERE op.order_id = ?
+    ORDER BY op.id ASC
+    `,
+    [id],
+  );
+
   // Calculate subtotal
   const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
 
-  // Calculate product discount
   const totalProductDiscount = items.reduce((sum, item) => {
     const productDiscount = parseFloat(item.product_discount) || 0;
     const subtotalItem = parseFloat(item.subtotal) || 0;
     return sum + (subtotalItem * productDiscount) / 100;
   }, 0);
-
-  // Calculate member discount
   const totalMemberDiscount = items.reduce((sum, item) => {
     const memberDiscount = parseFloat(item.member_discount) || 0;
     const price = parseFloat(item.price) || 0;
@@ -378,13 +608,17 @@ exports.getById = async (id) => {
     return sum + (afterProductDiscount * memberDiscount) / 100;
   }, 0);
   const totalDiscount = totalProductDiscount + totalMemberDiscount;
+  const paid = Number(orderData.paid) || 0;
+  const totalAmount = Number(orderData.total_amount) || 0;
   return {
     ...orderData,
     subtotal: subtotal,
     total_product_discount: totalProductDiscount,
     total_member_discount: totalMemberDiscount,
     total_discount: totalDiscount,
+    remaining: totalAmount - paid,
     items: items,
+    payments: payments,
   };
 };
 exports.getSalesChart = async (query) => {
@@ -478,7 +712,12 @@ exports.getTodayOrders = async () => {
       u.name AS cashier_name,
       o.total_amount,
       o.paid,
-      o.payment_method,
+      COALESCE(NULLIF((
+        SELECT GROUP_CONCAT(pm.name ORDER BY op.id SEPARATOR ', ')
+        FROM order_payment op
+        INNER JOIN payment_method pm ON pm.id = op.payment_method_id
+        WHERE op.order_id = o.id
+      ), ''), o.payment_method) AS payment_method,
       o.create_at
     FROM orders o
     LEFT JOIN customer c

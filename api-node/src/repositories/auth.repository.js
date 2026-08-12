@@ -1,6 +1,6 @@
 const { db } = require("../util/helper");
 
-//  GET ALL USERS 
+// GET ALL USERS
 exports.getList = async () => {
   const sql = `
     SELECT
@@ -25,7 +25,7 @@ exports.getList = async () => {
   return rows;
 };
 
-//  CREATE USER 
+// CREATE USER
 exports.create = async (data) => {
   const sql = `
     INSERT INTO user
@@ -53,22 +53,21 @@ exports.create = async (data) => {
   return result.insertId;
 };
 
-//  FIND USERNAME 
+// FIND USERNAME
 exports.findByUsername = async (username) => {
   const sql = `
     SELECT *
     FROM user
-    WHERE username = :username
+    WHERE username = ?
+    AND is_active = 1
   `;
 
-  const [rows] = await db.query(sql, {
-    username,
-  });
+  const [rows] = await db.query(sql, [username]);
 
   return rows[0];
 };
 
-//  FIND BY ID 
+// FIND BY ID
 exports.findById = async (id) => {
   const sql = `
     SELECT
@@ -82,14 +81,12 @@ exports.findById = async (id) => {
     WHERE id = :id
   `;
 
-  const [rows] = await db.query(sql, {
-    id,
-  });
+  const [rows] = await db.query(sql, { id });
 
   return rows[0];
 };
 
-//  UPDATE STATUS 
+// UPDATE STATUS
 exports.updateStatus = async (id, is_active) => {
   const sql = `
     UPDATE user
@@ -99,10 +96,7 @@ exports.updateStatus = async (id, is_active) => {
     WHERE id = ?
   `;
 
-  const [result] = await db.query(sql, [
-    is_active,
-    id,
-  ]);
+  const [result] = await db.query(sql, [is_active, id]);
 
   return result.affectedRows;
 };

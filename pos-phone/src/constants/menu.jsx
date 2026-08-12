@@ -36,6 +36,7 @@ import {
   FiBook,
   FiUsers as FiEmployees,
   FiUserPlus,
+  FiPlusSquare,
 } from "react-icons/fi";
 
 const getItem = (label, key, icon, children) => ({
@@ -48,8 +49,11 @@ const getItem = (label, key, icon, children) => ({
 export const menuItems = [
   // Dashboard
   getItem("Dashboard", "/dashboard", <FiHome className="w-5 h-5" />),
+  getItem("Paymenty Management", "payment", <FiShoppingCart className="w-5 h-5" />, [
+    getItem("Payment Overview", "/summary-payment", <FiShoppingBag className="w-4 h-4" />),
+    getItem("Payment Method", "/payment-method", <FiClock className="w-4 h-4" />),
+  ]),
 
-  // POS Management
   getItem("POS Management", "pos", <FiShoppingCart className="w-5 h-5" />, [
     getItem("POS Sale", "/pos", <FiShoppingBag className="w-4 h-4" />),
     getItem("Today Sale", "/today-sale", <FiClock className="w-4 h-4" />),

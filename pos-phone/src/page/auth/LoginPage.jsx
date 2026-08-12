@@ -11,13 +11,16 @@ import {
   FiUser,
   FiGrid,
 } from "react-icons/fi";
-import img from "../../assets/image.png"
+import { useAlert } from "../../components/common/Alert";
+import img from "../../assets/image.png";
+
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const alert = useAlert();
   const [state, setState] = useState({
     username: "",
     password: "",
@@ -34,7 +37,9 @@ const LoginPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!state.username.trim() || !state.password.trim()) {
-      setError("Please fill in all fields");
+      alert.warning("Please fill in all fields", {
+        description: "Username and password are required.",
+      });
       return;
     }
     setLoading(true);
@@ -48,13 +53,23 @@ const LoginPage = () => {
       if (res.success === true && res.access_token) {
         setAccessToken(res.access_token);
         setProfile(res.data);
+        alert.success("Login successful!", {
+          description: `Welcome back, ${res.data?.username || 'User'}!`,
+          duration: 3000,
+        });
         navigate(location.state?.from?.pathname || "/dashboard", { replace: true });
         return;
       }
       setError(res.message || "Login failed");
+      alert.error("Login failed", {
+        description: res.message || "Invalid credentials. Please try again.",
+      });
     } catch (error) {
       console.error("LOGIN ERROR:", error);
       setError("Unable to login. Please try again.");
+      alert.error("Unable to login", {
+        description: "Please check your connection and try again.",
+      });
     } finally {
       setLoading(false);
     }
@@ -63,7 +78,7 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full h-150 max-w-7xl bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-5 border border-gray-100">
-   
+        {/* LEFT SIDE - Image */}
         <div className="hidden lg:block lg:col-span-3 relative h-full min-h-[550px]">
           <img
             src={img}
@@ -78,7 +93,7 @@ const LoginPage = () => {
                 <FiGrid className="w-5 h-5 text-white" />
               </div>
               <div>
-                <span className="text-sm font-bold text-white  block">
+                <span className="text-sm font-bold text-white block">
                   Point Of Sale
                 </span>
                 <span className="text-[10px] text-gray-300 tracking-wider">
@@ -99,7 +114,7 @@ const LoginPage = () => {
           </div>
         </div>
 
-        {/* RIGHT SIDE - Login Form - 2/5 (smaller) */}
+        {/* RIGHT SIDE - Login Form */}
         <div className="lg:col-span-2 p-8 md:p-10 flex flex-col justify-center bg-white">
           <div className="max-w-[350px] mx-auto w-full">
             {/* Mobile Logo */}
@@ -126,7 +141,7 @@ const LoginPage = () => {
               </p>
             </div>
 
-            {/* Error Message */}
+            {/* Error Message - Keep for inline error display */}
             {error && (
               <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-3">
                 <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">

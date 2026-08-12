@@ -79,3 +79,24 @@ exports.getProfitChart = async (period = "monthly") => {
 exports.getRecentLoginActivity = async (limit = 10) => {
   return await loginHistoryService.getRecent(limit);
 };
+exports.getPaymentSummary = async (query) => {
+  const rows = await dashboardRepository.getPaymentSummary(query);
+
+  const methods = rows.map((item) => ({
+    payment_method_id: item.payment_method_id,
+    name: item.name,
+    type: item.type,
+    amount: Number(item.amount || 0),
+  }));
+
+  const total = methods.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
+
+  return {
+    period: query.period || "today",
+    total: Number(total.toFixed(2)),
+    methods,
+  };
+};
