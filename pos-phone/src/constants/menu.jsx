@@ -37,6 +37,8 @@ import {
   FiUsers as FiEmployees,
   FiUserPlus,
   FiPlusSquare,
+  FiBell,
+  FiUser as FiProfile,
 } from "react-icons/fi";
 
 const getItem = (label, key, icon, children) => ({
@@ -102,10 +104,14 @@ export const menuItems = [
     getItem("All Expenses", "/all-expense", <FiClipboard className="w-4 h-4" />),
     getItem("Expense Type", "/expense-type", <FiLayers className="w-4 h-4" />),
   ]),
+
+  // Notifications
+  getItem("Notifications", "/notifications", <FiBell className="w-5 h-5" />),
 ];
 
 // Bottom menu items (Settings, Help, Logout)
 export const bottomMenuItems = [
+  getItem("Profile", "/profile", <FiProfile className="w-5 h-5" />),
   getItem("Settings", "/settings", <FiSettings className="w-5 h-5" />),
   getItem("Help", "/help", <FiHelpCircle className="w-5 h-5" />),
   getItem("Logout", "/logout", <FiLogOut className="w-5 h-5" />),

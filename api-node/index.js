@@ -26,6 +26,8 @@ require("./src/routes/purchase.route")(app);
 require("./src/routes/dashboard.route")(app);
 require("./src/routes/paymentMethod.route")(app);
 require("./src/routes/orderPayment.route")(app);
+require("./src/routes/settings.route")(app);
+require("./src/routes/notification.route")(app);
 
 require("./src/jobs/stockAlert.job");
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

@@ -1,7 +1,9 @@
 // components/Sidebar.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { menuItems } from "../../constants/menu";
+import { menuItems, bottomMenuItems } from "../../constants/menu";
+import { useSettingsStore } from "../../store/settings.store";
+import { Config } from "../../util/config";
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -9,6 +11,15 @@ const Sidebar = () => {
   const [openKeys, setOpenKeys] = useState([]);
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { settings } = useSettingsStore();
+
+  const storeName = settings.store_name || "POS System";
+  const storeLogo = settings.store_logo || "";
+  const storeLogoUrl = storeLogo.startsWith("http")
+    ? storeLogo
+    : storeLogo
+      ? `${Config.base_url2}uploads/settings/${storeLogo}`
+      : "";
 
   // Close mobile sidebar on route change
   useEffect(() => {
@@ -30,6 +41,16 @@ const Sidebar = () => {
     setOpenKeys((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
+  };
+
+  const handleItemClick = (key) => {
+    if (key === "/logout") {
+      localStorage.removeItem("profile");
+      localStorage.removeItem("access_token");
+      navigate("/login");
+      return;
+    }
+    navigate(key);
   };
 
   const renderMenuItem = (item, depth = 0) => {
@@ -95,7 +116,7 @@ const Sidebar = () => {
     return (
       <button
         key={item.key}
-        onClick={() => navigate(item.key)}
+        onClick={() => handleItemClick(item.key)}
         className={`
           w-full flex items-center px-3.5 py-2.5 rounded-lg transition-all duration-200
           ${isActive ? "bg-gray-100 text-gray-900 font-medium" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"}
@@ -181,7 +202,47 @@ const Sidebar = () => {
         <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200 flex-shrink-0">
           {!collapsed ? (
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
+              {storeLogoUrl ? (
+                <img
+                  src={storeLogoUrl}
+                  alt={storeName}
+                  className="w-9 h-9 rounded-lg object-contain flex-shrink-0"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                    />
+                  </svg>
+                </div>
+              )}
+              <div>
+                <h1 className="text-base font-bold text-gray-900 tracking-tight truncate max-w-[160px]">
+                  {storeName}
+                </h1>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+                  Management
+                </p>
+              </div>
+            </div>
+          ) : (
+            storeLogoUrl ? (
+              <img
+                src={storeLogoUrl}
+                alt={storeName}
+                className="w-9 h-9 rounded-lg object-contain mx-auto flex-shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center mx-auto flex-shrink-0">
                 <svg
                   className="w-5 h-5 text-white"
                   fill="none"
@@ -196,31 +257,7 @@ const Sidebar = () => {
                   />
                 </svg>
               </div>
-              <div>
-                <h1 className="text-base font-bold text-gray-900 tracking-tight">
-                  POS System
-                </h1>
-                <p className="text-[10px] text-gray-400 uppercase tracking-wider">
-                  Management
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center mx-auto flex-shrink-0">
-              <svg
-                className="w-5 h-5 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
-            </div>
+            )
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
@@ -281,6 +318,9 @@ const Sidebar = () => {
         <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin scrollbar-thumb-gray-200">
           <div className="space-y-0.5">
             {menuItems.map((item) => renderMenuItem(item))}
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-200 space-y-0.5">
+            {bottomMenuItems.map((item) => renderMenuItem(item))}
           </div>
         </nav>
 

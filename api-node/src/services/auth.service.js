@@ -1,6 +1,7 @@
 const authRepository = require("../repositories/auth.repository");
 const bcrypt = require("bcrypt");
 const loginHistory = require("./loginHistory.service");
+const notificationService = require("./notification.service");
 const jwt = require("jsonwebtoken");
 const keyToken = "LWEJROI32209";
 //  REGISTER
@@ -53,6 +54,21 @@ exports.login = async (username, password, req) => {
   // Login success
   await loginHistory.loginSuccess(user, req);
 
+  try {
+    const ip =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      req.ip ||
+      null;
+    await notificationService.notifyLoginEvent({
+      user_id: user.id,
+      status: "success",
+      ip_address: ip,
+    });
+  } catch (error) {
+    console.error("Login notification failed:", error.message);
+  }
+
   return {
     user,
     access_token,
@@ -84,6 +100,24 @@ exports.updateStatus = async (id, is_active) => {
   return {
     message: "User status updated successfully",
   };
+};
+
+//  CHANGE PASSWORD
+exports.changePassword = async (userId, currentPassword, newPassword) => {
+  const user = await authRepository.findByIdRaw(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const isCorrect = bcrypt.compareSync(currentPassword, user.password);
+  if (!isCorrect) {
+    throw new Error("Current password is incorrect");
+  }
+
+  const hashedPassword = bcrypt.hashSync(newPassword, 10);
+  await authRepository.updatePassword(userId, hashedPassword);
+
+  return { message: "Password changed successfully" };
 };
 
 //  CREATE TOKEN

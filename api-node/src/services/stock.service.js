@@ -1,6 +1,8 @@
 const stockRepository = require("../repositories/stock.repository");
 const { db } = require("../util/helper");
 const telegramService = require("./telegram.service");
+const notificationService = require("./notification.service");
+
 exports.getLowStockProducts = async () => {
   const products = await stockRepository.getLowStockProducts();
   return products;
@@ -11,6 +13,12 @@ exports.checkLowStock = async () => {
     return;
   }
   await telegramService.sendLowStockAlert(products);
+
+  try {
+    await notificationService.notifyLowStock(products);
+  } catch (error) {
+    console.error("Stock notification failed:", error.message);
+  }
 };
 exports.getStockMovement = async (year) => {
   return await stockRepository.getStockMovement(year);

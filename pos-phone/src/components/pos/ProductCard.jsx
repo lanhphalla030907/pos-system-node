@@ -1,9 +1,14 @@
 // components/pos/ProductCard.jsx - Fixed with smaller image height
 import React from 'react';
 import ProductImage from '../product/ProductImage';
+import { formatCurrency, toDisplay, getCurrencyRate } from '../../util/currency';
+import { useSettingsStore } from '../../store/settings.store';
 import { FiBox } from 'react-icons/fi';
 
 const ProductCard = ({ product, onClick, memberDiscount = 0 }) => {
+  const { settings } = useSettingsStore();
+  const currency = settings.currency || "USD";
+  const rate = getCurrencyRate(settings);
   const stock = parseInt(product?.qty) || 0;
   const isOutOfStock = stock === 0;
   
@@ -71,15 +76,15 @@ const ProductCard = ({ product, onClick, memberDiscount = 0 }) => {
             {(hasProductDiscount || hasMemberDiscount) ? (
               <>
                 <span className="text-[8px] sm:text-[10px] text-gray-400 line-through">
-                  ${price.toFixed(2)}
+                  {formatCurrency(toDisplay(price, currency, rate), currency)}
                 </span>
                 <span className="text-xs sm:text-sm md:text-base font-bold text-black block">
-                  ${finalPrice.toFixed(2)}
+                  {formatCurrency(toDisplay(finalPrice, currency, rate), currency)}
                 </span>
               </>
             ) : (
               <span className="text-xs sm:text-sm md:text-base font-bold text-black">
-                ${price.toFixed(2)}
+                {formatCurrency(toDisplay(price, currency, rate), currency)}
               </span>
             )}
           </div>

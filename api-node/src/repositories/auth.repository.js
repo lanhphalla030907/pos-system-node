@@ -71,14 +71,18 @@ exports.findByUsername = async (username) => {
 exports.findById = async (id) => {
   const sql = `
     SELECT
-      id,
-      role_id,
-      name,
-      username,
-      is_active,
-      create_by
-    FROM user
-    WHERE id = :id
+      u.id,
+      u.role_id,
+      u.name,
+      u.username,
+      u.is_active,
+      u.create_by,
+      u.create_at,
+      u.update_at,
+      r.name AS role_name
+    FROM user u
+    LEFT JOIN role r ON u.role_id = r.id
+    WHERE u.id = :id
   `;
 
   const [rows] = await db.query(sql, { id });
@@ -98,5 +102,19 @@ exports.updateStatus = async (id, is_active) => {
 
   const [result] = await db.query(sql, [is_active, id]);
 
+  return result.affectedRows;
+};
+
+// FIND BY ID (raw, includes password)
+exports.findByIdRaw = async (id) => {
+  const sql = `SELECT * FROM user WHERE id = ?`;
+  const [rows] = await db.query(sql, [id]);
+  return rows[0];
+};
+
+// UPDATE PASSWORD
+exports.updatePassword = async (id, password) => {
+  const sql = `UPDATE user SET password = ?, update_at = CURRENT_TIMESTAMP WHERE id = ?`;
+  const [result] = await db.query(sql, [password, id]);
   return result.affectedRows;
 };

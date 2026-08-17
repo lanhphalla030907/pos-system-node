@@ -2,10 +2,16 @@
 import React from 'react';
 import CartItem from './CartItem';
 import { calculateCartTotals } from '../../util/cartHelpers';
+import { formatCurrency, toDisplay, getCurrencyRate } from '../../util/currency';
+import { useSettingsStore } from '../../store/settings.store';
 import { FiShoppingCart, FiTrash2, FiCheckCircle, FiTag, FiX } from 'react-icons/fi';
 
 const Cart = ({ cart, onUpdateQuantity, onRemove, onClear, onCheckout, memberDiscount = 0, onClose }) => {
-  const totals = calculateCartTotals(cart, memberDiscount);
+  const { settings } = useSettingsStore();
+  const currency = settings.currency || "USD";
+  const rate = getCurrencyRate(settings);
+  const taxRate = settings.tax_rate || 0;
+  const totals = calculateCartTotals(cart, memberDiscount, taxRate);
 
   return (
     <div className="w-full md:w-80 h-full bg-white shadow-lg flex flex-col border-l border-gray-200">
@@ -78,23 +84,29 @@ const Cart = ({ cart, onUpdateQuantity, onRemove, onClear, onCheckout, memberDis
           <div className="space-y-1.5 mb-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Subtotal</span>
-              <span className="font-medium text-gray-700">${totals.subtotal.toFixed(2)}</span>
+              <span className="font-medium text-gray-700">{formatCurrency(toDisplay(totals.subtotal, currency, rate), currency)}</span>
             </div>
             {totals.totalProductDiscount > 0 && (
               <div className="flex justify-between text-sm text-red-500">
                 <span>Product Discount</span>
-                <span>-${totals.totalProductDiscount.toFixed(2)}</span>
+                <span>-{formatCurrency(toDisplay(totals.totalProductDiscount, currency, rate), currency)}</span>
               </div>
             )}
             {totals.totalMemberDiscount > 0 && (
               <div className="flex justify-between text-sm text-emerald-500">
                 <span>Member Discount</span>
-                <span>-${totals.totalMemberDiscount.toFixed(2)}</span>
+                <span>-{formatCurrency(toDisplay(totals.totalMemberDiscount, currency, rate), currency)}</span>
+              </div>
+            )}
+            {totals.taxAmount > 0 && (
+              <div className="flex justify-between text-sm text-blue-500">
+                <span>Tax ({totals.taxRate}%)</span>
+                <span>{formatCurrency(toDisplay(totals.taxAmount, currency, rate), currency)}</span>
               </div>
             )}
             <div className="flex justify-between text-base font-bold border-t border-gray-200 pt-2 mt-2">
               <span className="text-gray-700">Total</span>
-              <span className="text-black">${totals.total.toFixed(2)}</span>
+              <span className="text-black">{formatCurrency(toDisplay(totals.grandTotal, currency, rate), currency)}</span>
             </div>
           </div>
 

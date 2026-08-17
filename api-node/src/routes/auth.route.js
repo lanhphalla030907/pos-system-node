@@ -2,6 +2,7 @@ const {
   register,
   login,
   getProfile,
+  changePassword,
   validate_token,
   getList,
   updateStatus,
@@ -18,4 +19,5 @@ module.exports = (app) => {
 
   // profile
   app.get("/api/auth/profile", validate_token(), getProfile);
+  app.put("/api/auth/change-password", validate_token(), changePassword);
 };

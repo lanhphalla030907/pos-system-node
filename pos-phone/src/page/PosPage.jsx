@@ -1,5 +1,5 @@
 // pages/PosPage.jsx - With Payment Components
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import useProduct from '../hooks/useProduct';
 import { useOrder } from '../hooks/useOrder';
@@ -9,6 +9,8 @@ import Cart from '../components/pos/Cart';
 import Receipt from '../components/pos/Receipt';
 import PaymentRow from '../components/pos/PaymentRow';
 import { prepareOrderItems, calculateCartTotals } from '../util/cartHelpers';
+import { useSettingsStore } from '../store/settings.store';
+import { formatCurrency, toDisplay, toBase, getCurrencyRate } from '../util/currency';
 import { FiRefreshCw, FiShoppingCart, FiX, FiPlus, FiUser, FiCheckCircle } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { useAlert } from '../components/common/Alert';
@@ -39,6 +41,25 @@ const PosPage = () => {
   } = useCustomer();
 
   const { paymentMethods, loadPaymentMethods } = usePaymentMethod();
+  const activePaymentMethods = useMemo(
+    () => paymentMethods.filter((method) => Number(method.is_active) === 1),
+    [paymentMethods],
+  );
+  
+  const { settings } = useSettingsStore();
+  const currency = settings.currency || "USD";
+  const taxRate = settings.tax_rate || 0;
+  const currencyRate = getCurrencyRate(settings);
+  const shopInfo = {
+    name: settings.store_name || 'POS Shop',
+    tel: settings.store_phone || '',
+    address: settings.store_address || '',
+    email: settings.store_email || '',
+    logo: settings.store_logo || '',
+  };
+  const receiptHeader = settings.receipt_header || '';
+  const receiptFooter = settings.receipt_footer || '';
+  const receiptShowTax = settings.receipt_show_tax === '1';
   
   const alert = useAlert();
   const { showConfirm, config, setLoading: setConfirmLoading } = useConfirm();
@@ -100,11 +121,11 @@ const PosPage = () => {
 
   // Initialize payment when checkout mode opens
   useEffect(() => {
-    if (isCheckoutMode && paymentMethods.length > 0 && payments.length === 0) {
-      const totals = calculateCartTotals(cart, memberDiscount);
-      setPayments([newRow(paymentMethods, totals.total)]);
+    if (isCheckoutMode && activePaymentMethods.length > 0 && payments.length === 0) {
+      const totals = calculateCartTotals(cart, memberDiscount, taxRate);
+      setPayments([newRow(activePaymentMethods, toDisplay(totals.grandTotal, currency, currencyRate))]);
     }
-  }, [isCheckoutMode, paymentMethods, cart, memberDiscount]);
+  }, [isCheckoutMode, activePaymentMethods, payments.length, cart, memberDiscount, taxRate, currency, currencyRate]);
 
   // Cart operations
   const addToCart = useCallback((product) => {
@@ -202,29 +223,29 @@ const PosPage = () => {
   }, []);
 
   const addPaymentRow = useCallback(() => {
-    const totals = calculateCartTotals(cart, memberDiscount);
-    const totalAmount = totals.total;
+    const totals = calculateCartTotals(cart, memberDiscount, taxRate);
+    const totalAmount = toDisplay(totals.grandTotal, currency, currencyRate);
     setPayments((prev) => {
-      if (prev.length >= paymentMethods.length) return prev;
+      if (prev.length >= activePaymentMethods.length) return prev;
       const totalPaid = prev.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0);
       const remaining = Math.round((totalAmount - totalPaid + Number.EPSILON) * 100) / 100;
-      const newRowData = newRow(paymentMethods, remaining > 0 ? remaining : 0);
+      const newRowData = newRow(activePaymentMethods, remaining > 0 ? remaining : 0);
       return [...prev, newRowData];
     });
     setPaymentError('');
-  }, [paymentMethods, cart, memberDiscount]);
+  }, [activePaymentMethods, cart, memberDiscount, taxRate, currency, currencyRate]);
 
   const removePaymentRow = useCallback((key) => {
     setPayments((prev) => {
       const newPayments = prev.filter((row) => row.key !== key);
       if (newPayments.length === 0) {
-        const totals = calculateCartTotals(cart, memberDiscount);
-        return [newRow(paymentMethods, totals.total)];
+        const totals = calculateCartTotals(cart, memberDiscount, taxRate);
+        return [newRow(activePaymentMethods, toDisplay(totals.grandTotal, currency, currencyRate))];
       }
       return newPayments;
     });
     setPaymentError('');
-  }, [paymentMethods, cart, memberDiscount]);
+  }, [activePaymentMethods, cart, memberDiscount, taxRate, currency, currencyRate]);
 
   // Customer functions
   const filteredCustomers = customers.filter(c => 
@@ -253,9 +274,9 @@ const PosPage = () => {
     }
   };
 
-  // Calculate totals
-  const totals = calculateCartTotals(cart, memberDiscount);
-  const totalAmount = totals.total;
+  // Calculate totals (internal math stays in USD, converted to display currency)
+  const totals = calculateCartTotals(cart, memberDiscount, taxRate);
+  const totalAmount = toDisplay(totals.grandTotal, currency, currencyRate);
 
   const totalPaid = Math.round((payments.reduce((sum, row) => sum + (parseFloat(row.amount) || 0), 0) + Number.EPSILON) * 100) / 100;
   const remaining = Math.round((totalAmount - totalPaid + Number.EPSILON) * 100) / 100;
@@ -307,15 +328,16 @@ const PosPage = () => {
     }
 
     if (remaining > 0.01) {
-      setPaymentError(`Total paid ($${totalPaid.toFixed(2)}) is less than total ($${totalAmount.toFixed(2)})`);
+      setPaymentError(`Total paid (${formatCurrency(totalPaid, currency)}) is less than total (${formatCurrency(totalAmount, currency)})`);
       return;
     }
 
     const payload = {
       customer_id: selectedCustomer.id,
+      tax_rate: totals.taxRate,
       payments: payments.map((row) => ({
         payment_method_id: Number(row.payment_method_id),
-        amount: parseFloat(row.amount),
+        amount: Math.round(toBase(parseFloat(row.amount), currency, currencyRate) * 100) / 100,
         reference_no: row.reference_no?.trim() || undefined,
       })),
       remark: selectedCustomer?.name || 'Walk-in Customer',
@@ -335,9 +357,12 @@ const PosPage = () => {
           total_product_discount: totals.totalProductDiscount,
           total_member_discount: totals.totalMemberDiscount,
           total_discount: totals.totalDiscount,
-          total_amount: totalAmount,
-          paid: totalPaid,
+          tax_rate: totals.taxRate,
+          tax_amount: totals.taxAmount,
+          total_amount: totals.grandTotal,
+          paid: toBase(totalPaid, currency, currencyRate),
           cashier: 'Admin',
+          currency,
           created_at: new Date().toISOString(),
           items: cart.map(item => ({
             product_name: item.name,
@@ -594,7 +619,7 @@ const PosPage = () => {
                   Payment Methods
                 </label>
 
-                {paymentMethods.length === 0 ? (
+                {activePaymentMethods.length === 0 ? (
                   <div className="text-xs text-gray-400 border border-gray-200 rounded-lg p-3 text-center">
                     No active payment methods available.
                   </div>
@@ -605,7 +630,7 @@ const PosPage = () => {
                         key={row.key}
                         row={row}
                         index={index}
-                        paymentMethods={paymentMethods}
+                        paymentMethods={activePaymentMethods}
                         usedIds={usedIds}
                         onUpdate={updatePaymentRow}
                         onRemove={removePaymentRow}
@@ -618,7 +643,7 @@ const PosPage = () => {
 
                 <button
                   onClick={addPaymentRow}
-                  disabled={payments.length >= paymentMethods.length}
+                  disabled={payments.length >= activePaymentMethods.length}
                   className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-sm text-gray-600 hover:text-black border border-gray-200 hover:border-gray-300 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <FiPlus className="w-4 h-4" />
@@ -636,12 +661,12 @@ const PosPage = () => {
                           ? 'text-blue-600'
                           : 'text-orange-500'
                     }`}>
-                      ${totalPaid.toFixed(2)}
+                      {formatCurrency(totalPaid, currency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Total</span>
-                    <span className="font-semibold text-gray-700">${totalAmount.toFixed(2)}</span>
+                    <span className="font-semibold text-gray-700">{formatCurrency(totalAmount, currency)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Change</span>
@@ -650,7 +675,7 @@ const PosPage = () => {
                         ? 'text-emerald-600'
                         : 'text-gray-400'
                     }`}>
-                      ${remaining < -0.01 ? Math.abs(remaining).toFixed(2) : '0.00'}
+                      {formatCurrency(remaining < -0.01 ? Math.abs(remaining) : 0, currency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -662,7 +687,7 @@ const PosPage = () => {
                           ? 'text-orange-500'
                           : 'text-emerald-600'
                     }`}>
-                      ${remaining < 0 ? '0.00' : remaining.toFixed(2)}
+                      {formatCurrency(remaining < 0 ? 0 : remaining, currency)}
                     </span>
                   </div>
                 </div>
@@ -672,23 +697,29 @@ const PosPage = () => {
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-500">Items ({totals.totalItems})</span>
-                  <span className="text-gray-700">${totals.subtotal.toFixed(2)}</span>
+                  <span className="text-gray-700">{formatCurrency(toDisplay(totals.subtotal, currency, currencyRate), currency)}</span>
                 </div>
                 {totals.totalProductDiscount > 0 && (
                   <div className="flex justify-between text-sm text-red-500 mb-1">
                     <span>Product Discount</span>
-                    <span>-${totals.totalProductDiscount.toFixed(2)}</span>
+                    <span>-{formatCurrency(toDisplay(totals.totalProductDiscount, currency, currencyRate), currency)}</span>
                   </div>
                 )}
                 {totals.totalMemberDiscount > 0 && (
                   <div className="flex justify-between text-sm text-emerald-500 mb-1">
                     <span>Member Discount</span>
-                    <span>-${totals.totalMemberDiscount.toFixed(2)}</span>
+                    <span>-{formatCurrency(toDisplay(totals.totalMemberDiscount, currency, currencyRate), currency)}</span>
+                  </div>
+                )}
+                {totals.taxAmount > 0 && (
+                  <div className="flex justify-between text-sm text-blue-500 mb-1">
+                    <span>Tax ({totals.taxRate}%)</span>
+                    <span>{formatCurrency(toDisplay(totals.taxAmount, currency, currencyRate), currency)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2 mt-2">
                   <span className="text-gray-700">Total</span>
-                  <span className="text-black">${totalAmount.toFixed(2)}</span>
+                  <span className="text-black">{formatCurrency(totalAmount, currency)}</span>
                 </div>
               </div>
 
@@ -762,11 +793,12 @@ const PosPage = () => {
           <Receipt
             ref={receiptRef}
             order={lastOrder}
-            shopInfo={{
-              name: 'POS SHOP',
-              tel: '012 345 678',
-              address: 'Phnom Penh, Cambodia'
-            }}
+            shopInfo={shopInfo}
+            header={receiptHeader}
+            footer={receiptFooter}
+            showTax={receiptShowTax}
+            currency={currency}
+            rate={currencyRate}
           />
         </div>
       )}

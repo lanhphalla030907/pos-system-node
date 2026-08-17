@@ -16,7 +16,68 @@ exports.getProductById = async (id) => {
 };
 
 exports.createProduct = async (data, user) => {
-  return await productRepository.create(data, user);
+  const {
+    category_id,
+    barcode,
+    name,
+    brand,
+    description,
+    qty,
+    min_stock,
+    price,
+    cost_price,
+    discount,
+    status,
+    image,
+  } = data;
+  // RQUIRED
+  if (!name || !name.trim()) {
+    throw new AppError("Product name is required", 400);
+  }
+  if (!category_id) {
+    throw new AppError("Category is required", 400);
+  }
+  // NUMBER VALIDATION
+  const productQty = Number(qty);
+  const minimumStock = Number(min_stock);
+  const productPrice = Number(price);
+  const productCostPrice = Number(cost_price);
+  const productDiscount = Number(discount || 0);
+  if (!Number.isFinite(productQty) || productQty < 0) {
+    throw new AppError("Quantity cannot be less than 0", 400);
+  }
+  if (!Number.isFinite(minimumStock) || minimumStock < 0) {
+    throw new AppError("Minimum stock cannot be less than 0", 400);
+  }
+  if (!Number.isFinite(productPrice) || productPrice < 0) {
+    throw new AppError("Price cannot be less than 0", 400);
+  }
+  if (!Number.isFinite(productCostPrice) || productCostPrice < 0) {
+    throw new AppError("Cost price cannot be less than 0", 400);
+  }
+  if (
+    !Number.isFinite(productDiscount) ||
+    productDiscount < 0 ||
+    productDiscount > 100
+  ) {
+    throw new AppError("Discount must be between 0 and 100", 400);
+  }
+  // BUSINESS RULE
+  if (productCostPrice > productPrice) {
+    throw new AppError("Cost price cannot be greater than selling price", 400);
+  }
+  // CREATE
+  return await productRepository.create(
+    {
+      ...data,
+      qty: productQty,
+      min_stock: minimumStock,
+      price: productPrice,
+      cost_price: productCostPrice,
+      discount: productDiscount,
+    },
+    user,
+  );
 };
 
 exports.updateProduct = async (id, data) => {
@@ -70,5 +131,5 @@ exports.getTopSale = async (query) => {
   return await productRepository.getTopSale(query);
 };
 exports.getSummary = async () => {
-    return await productRepository.getSummary();
+  return await productRepository.getSummary();
 };

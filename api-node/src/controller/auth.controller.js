@@ -102,3 +102,20 @@ exports.updateStatus = async (req, res) => {
 
 //  VALIDATE TOKEN
 exports.validate_token = authService.validateToken;
+
+//  CHANGE PASSWORD
+exports.changePassword = async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body;
+    const result = await authService.changePassword(req.current_id, current_password, new_password);
+    res.json({
+      success: true,
+      message: result.message,
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};

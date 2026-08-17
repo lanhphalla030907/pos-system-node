@@ -1,5 +1,7 @@
 // utils/cartHelpers.js
 
+const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+
 /**
  * Calculate discounted price for a single product
  * @param {Object} product - Product object
@@ -31,10 +33,12 @@ export const calculateProductDiscount = (product, memberDiscount = 0) => {
 };
 
 /**
- * Calculate cart totals with member discount
- * ✅ លុប Tax ចេញទាំងស្រុង!
+ * Calculate cart totals with member discount and optional tax
+ * @param {Array} cart - Cart items
+ * @param {number} memberDiscount - Member discount percentage
+ * @param {number} taxRate - Tax percentage (from settings)
  */
-export const calculateCartTotals = (cart, memberDiscount = 0) => {
+export const calculateCartTotals = (cart, memberDiscount = 0, taxRate = 0) => {
   let totalItems = 0;
   let subtotal = 0;
   let totalProductDiscount = 0;
@@ -52,9 +56,9 @@ export const calculateCartTotals = (cart, memberDiscount = 0) => {
     total += calc.finalTotal;
   });
 
-  // ❌ លុប Tax ចេញ!
-  // const tax = total * 0.1;
-  // const grandTotal = total + tax;
+  const taxRateNum = parseFloat(taxRate) || 0;
+  const taxAmount = round2(total * (taxRateNum / 100));
+  const grandTotal = round2(total + taxAmount);
 
   return {
     totalItems,
@@ -62,7 +66,10 @@ export const calculateCartTotals = (cart, memberDiscount = 0) => {
     totalProductDiscount,
     totalMemberDiscount,
     totalDiscount,
-    total,        // ✅ នេះជា Total ពិតប្រាកដ
+    total,        // pre-tax total
+    taxRate: taxRateNum,
+    taxAmount,
+    grandTotal,   // final amount the customer pays
   };
 };
 

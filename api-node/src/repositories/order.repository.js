@@ -19,6 +19,8 @@ exports.create = async (data, user) => {
 
     let memberDiscount = 0;
     let customerType = "regular";
+    // TAX RATE (from settings, 0-100)
+    const taxRate = Math.max(0, Math.min(100, Number(data.tax_rate) || 0));
     // VALIDATE CUSTOMER
     if (data.customer_id) {
       const [customerRows] = await connection.query(
@@ -55,6 +57,8 @@ exports.create = async (data, user) => {
         customer_id,
         user_id,
         total_amount,
+        tax_rate,
+        tax_amount,
         paid,
         payment_method,
         remark,
@@ -66,6 +70,8 @@ exports.create = async (data, user) => {
         :customer_id,
         :user_id,
         0,
+        :tax_rate,
+        0,
         0,
         "",
         :remark,
@@ -76,6 +82,7 @@ exports.create = async (data, user) => {
         order_no: tempOrderNo,
         customer_id: data.customer_id || null,
         user_id: user.data.id,
+        tax_rate: taxRate,
         remark: data.remark || "",
         create_by: user.data.id,
       },
@@ -241,14 +248,18 @@ exports.create = async (data, user) => {
     totalProductDiscount = round2(totalProductDiscount);
     totalMemberDiscount = round2(totalMemberDiscount);
     subtotal = round2(subtotal);
+    // APPLY TAX
+    const taxAmount = round2(totalAmount * (taxRate / 100));
+    const finalTotal = round2(totalAmount + taxAmount);
     // UPDATE ORDER TOTAL
     await connection.query(
       `
       UPDATE orders
-      SET total_amount = ?
+      SET total_amount = ?,
+          tax_amount = ?
       WHERE id = ?
       `,
-      [totalAmount, orderId],
+      [finalTotal, taxAmount, orderId],
     );
     // VALIDATE PAYMENTS
     const paymentRows = [];
@@ -307,7 +318,7 @@ exports.create = async (data, user) => {
     // PAYMENT TOTAL MUST MATCH ORDER TOTAL
     totalPaid = round2(totalPaid);
 
-    if (totalPaid < totalAmount) {
+    if (totalPaid < finalTotal) {
       throw new AppError("Payment amount is not enough", 400);
     }
     // CREATE ORDER PAYMENTS
@@ -399,11 +410,15 @@ exports.create = async (data, user) => {
 
       subtotal,
 
-      total_amount: totalAmount,
+      tax_rate: taxRate,
+
+      tax_amount: taxAmount,
+
+      total_amount: finalTotal,
 
       paid: totalPaid,
 
-      remaining: round2(totalAmount - totalPaid),
+      remaining: round2(finalTotal - totalPaid),
 
       total_product_discount: totalProductDiscount,
 
@@ -480,6 +495,8 @@ exports.getAll = async (filter) => {
       c.type AS customer_type,
       u.name AS user_name,
       o.total_amount,
+      o.tax_rate,
+      o.tax_amount,
       o.paid,
       COALESCE(NULLIF((
         SELECT GROUP_CONCAT(pm.name ORDER BY op.id SEPARATOR ', ')
@@ -520,6 +537,8 @@ exports.getById = async (id) => {
       o.id,
       o.order_no,
       o.total_amount,
+      o.tax_rate,
+      o.tax_amount,
       o.paid,
       o.payment_method,
       o.remark,
@@ -711,6 +730,8 @@ exports.getTodayOrders = async () => {
       c.name AS customer_name,
       u.name AS cashier_name,
       o.total_amount,
+      o.tax_rate,
+      o.tax_amount,
       o.paid,
       COALESCE(NULLIF((
         SELECT GROUP_CONCAT(pm.name ORDER BY op.id SEPARATOR ', ')

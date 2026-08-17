@@ -1,4 +1,4 @@
-// components/TodaySales.jsx
+// components/TodaySales.jsx - Fixed
 import React, { useEffect } from "react";
 import useSales from "../../hooks/useSales";
 
@@ -16,12 +16,13 @@ const TodaySales = () => {
     loadTodayOrders();
   }, []);
 
+  // ✅ FIXED: Show 2 decimal places
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,  // ✅ Changed from 0 to 2
+      maximumFractionDigits: 2,  // ✅ Added this for consistency
     }).format(amount || 0);
   };
 

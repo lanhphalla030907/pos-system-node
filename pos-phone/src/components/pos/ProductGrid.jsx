@@ -3,6 +3,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import ProductCard from "./ProductCard";
 import ProductImage from "../product/ProductImage";
 import { getActiveCategories } from "../../api/categoryApi";
+import { formatCurrency, toDisplay, getCurrencyRate } from "../../util/currency";
+import { useSettingsStore } from "../../store/settings.store";
 import { FiSearch, FiFilter, FiX, FiGrid, FiList, FiBox } from "react-icons/fi";
 
 const ProductGrid = ({
@@ -11,6 +13,9 @@ const ProductGrid = ({
   onProductClick,
   memberDiscount = 0,
 }) => {
+  const { settings } = useSettingsStore();
+  const currency = settings.currency || "USD";
+  const rate = getCurrencyRate(settings);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categories, setCategories] = useState([]);
@@ -288,7 +293,7 @@ const ProductGrid = ({
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-black text-sm">
-                    ${parseFloat(product?.price || 0).toFixed(2)}
+                    {formatCurrency(toDisplay(parseFloat(product?.price || 0), currency, rate), currency)}
                   </p>
                   {parseFloat(product?.discount) > 0 && (
                     <p className="text-xs text-red-500">

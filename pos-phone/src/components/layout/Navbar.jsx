@@ -4,17 +4,12 @@ import { getProfile } from "../../store/profile.store";
 import {
   FiSearch,
   FiPlus,
-  FiBell,
   FiUser,
   FiSettings,
   FiLogOut,
   FiChevronDown,
-  FiGrid,
-  FiShoppingBag,
-  FiBarChart2,
-  FiUsers,
-  FiPackage,
 } from "react-icons/fi";
+import NotificationDropdown from "../notification/NotificationDropdown";
 
 const Navbar = () => {
   const profile = getProfile();
@@ -76,12 +71,7 @@ const Navbar = () => {
           <FiPlus className="w-5 h-5" />
         </button>
 
-        <button className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors relative">
-          <FiBell className="w-5 h-5" />
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-            3
-          </span>
-        </button>
+        <NotificationDropdown />
 
         <div className="w-px h-8 bg-gray-200 hidden sm:block" />
 

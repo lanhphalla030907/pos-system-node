@@ -9,6 +9,13 @@
 body {
   font-family: var(--font-sans);
 }
+body.lang-khmer,
+body.lang-khmer .ant-select,
+body.lang-khmer .ant-btn,
+body.lang-khmer input,
+body.lang-khmer textarea {
+  font-family: "Kantumruy Pro", "Inter", sans-serif;
+}
 @keyframes fadeIn {
   from {
     opacity: 0;

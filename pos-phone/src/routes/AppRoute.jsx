@@ -31,6 +31,10 @@ import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 import PaymentMethodPage from "../page/order/PaymentMethodPage";
 import PaymentSummaryPage from "../page/order/PaymentSummaryPage";
+import SettingsPage from "../page/settings/SettingsPage";
+import HelpPage from "../page/settings/HelpPage";
+import NotificationPage from "../page/notification/NotificationPage";
+import ProfilePage from "../page/profile/ProfilePage";
 function AppRoute() {
   return (
     <BrowserRouter>
@@ -85,6 +89,13 @@ function AppRoute() {
             />
             {/* Customer */}
             <Route path="/customers" element={<CustomerPage />} />
+            {/* Settings */}
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/help" element={<HelpPage />} />
+            {/* Notifications */}
+            <Route path="/notifications" element={<NotificationPage />} />
+            {/* Profile */}
+            <Route path="/profile" element={<ProfilePage />} />
             {/* Brnd */}
             <Route path="/brand" element={<PlaceholderPage title="Brand" />} />
           </Route>

@@ -2,9 +2,14 @@
 import React from 'react';
 import ProductImage from '../product/ProductImage';
 import { calculateProductDiscount } from '../../util/cartHelpers';
+import { formatCurrency, toDisplay, getCurrencyRate } from '../../util/currency';
+import { useSettingsStore } from '../../store/settings.store';
 import { FiMinus, FiPlus, FiX } from 'react-icons/fi';
 
 const CartItem = ({ item, onUpdateQuantity, onRemove, memberDiscount = 0 }) => {
+  const { settings } = useSettingsStore();
+  const currency = settings.currency || "USD";
+  const rate = getCurrencyRate(settings);
   const calc = calculateProductDiscount(item, memberDiscount);
   const hasProductDiscount = parseFloat(item?.discount) > 0;
   const hasMemberDiscount = memberDiscount > 0;
@@ -25,15 +30,15 @@ const CartItem = ({ item, onUpdateQuantity, onRemove, memberDiscount = 0 }) => {
           {(hasProductDiscount || hasMemberDiscount) ? (
             <>
               <span className="text-[10px] sm:text-xs text-gray-400 line-through">
-                ${parseFloat(item?.price || 0).toFixed(2)}
+                {formatCurrency(toDisplay(parseFloat(item?.price || 0), currency, rate), currency)}
               </span>
               <span className="text-xs sm:text-sm font-bold text-black">
-                ${calc.price.toFixed(2)}
+                {formatCurrency(toDisplay(calc.price, currency, rate), currency)}
               </span>
             </>
           ) : (
             <span className="text-xs sm:text-sm font-bold text-black">
-              ${parseFloat(item?.price || 0).toFixed(2)}
+              {formatCurrency(toDisplay(parseFloat(item?.price || 0), currency, rate), currency)}
             </span>
           )}
           {hasProductDiscount && (
@@ -48,7 +53,7 @@ const CartItem = ({ item, onUpdateQuantity, onRemove, memberDiscount = 0 }) => {
           )}
         </div>
         <div className="text-[8px] sm:text-[10px] text-gray-400">
-          Total: ${calc.finalTotal.toFixed(2)}
+          Total: {formatCurrency(toDisplay(calc.finalTotal, currency, rate), currency)}
         </div>
       </div>
       <div className="flex items-center gap-0.5 sm:gap-1">

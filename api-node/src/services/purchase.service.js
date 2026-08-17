@@ -1,5 +1,6 @@
 const { db } = require("../util/helper");
 const purchaseRepository = require("../repositories/purchase.repository");
+const notificationService = require("./notification.service");
 exports.create = async (data, userId) => {
   const connection = await db.getConnection();
   try {
@@ -134,6 +135,16 @@ exports.create = async (data, userId) => {
     // COMMI
 
     await connection.commit();
+
+    try {
+      await notificationService.notifyPurchaseCreated({
+        id: purchaseId,
+        purchase_no: purchaseNo,
+        total_amount: totalAmount,
+      });
+    } catch (error) {
+      console.error("Purchase notification failed:", error.message);
+    }
 
     return {
       id: purchaseId,
