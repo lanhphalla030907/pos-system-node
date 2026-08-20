@@ -10,6 +10,7 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
       key: "image",
       title: "Image",
       width: "80px",
+      mobile: false,
       render: (row) => (
         <ProductImage image={row.image} alt={row.name} size="md" />
       ),
@@ -17,6 +18,7 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
     {
       key: "product",
       title: "Product",
+      mobilePrimary: true,
       render: (row) => (
         <div>
           <div className="font-medium text-gray-900">{row.name}</div>
@@ -38,6 +40,7 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
     {
       key: "description",
       title: "Description",
+      mobile: false,
       render: (row) => (
         <div>
           <div className="font-medium text-gray-900">{row.description}</div>
@@ -55,7 +58,8 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
     },
      {
       key: "cost_price",
-      title: "Cost Pirce",
+      title: "Cost Price",
+      mobile: false,
       render: (row) => (
         <div>
           <div className="font-medium text-gray-900">{row.cost_price}</div>
@@ -89,6 +93,7 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
       key: "qty",
       title: "Stock",
       width: "250px",
+      mobile: false,
       render: (row) => {
         const qty = parseInt(row.qty);
         let status = "in-stock";
@@ -130,6 +135,7 @@ const ProductTable = ({ products, loading, onEdit, onDelete }) => {
       key: "create_by",
       title: "CreateBy",
       width: "150px",
+      mobile: false,
       render: (row) => (
         <div>
           <div className="text-sm text-gray-600 line-clamp-2">

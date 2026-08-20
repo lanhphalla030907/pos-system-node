@@ -672,15 +672,80 @@ const AddPurchasePage = () => {
             {/* Items List */}
             {items.length > 0 ? (
               <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
+                {/* Mobile Cards */}
+                <div className="md:hidden divide-y divide-gray-200">
+                  {items.map((item, index) => (
+                    <div key={index} className="p-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{item.product_name}</p>
+                          {item.barcode && (
+                            <p className="text-xs text-gray-400">{item.barcode}</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(index)}
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateItemQty(index, item.qty - 1)}
+                            className="w-7 h-7 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                          >
+                            <FiMinus className="w-3 h-3 text-gray-600" />
+                          </button>
+                          <span className="w-8 text-center font-medium text-sm">{item.qty}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateItemQty(index, item.qty + 1)}
+                            className="w-7 h-7 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
+                          >
+                            <FiPlus className="w-3 h-3 text-gray-600" />
+                          </button>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-800">${safeCurrency(item.amount)}</p>
+                          <p className="text-xs text-gray-400">${safeCurrency(item.cost)}/ea</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="p-3 bg-gray-50 border-t border-gray-200">
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span className="font-semibold">${safeCurrency(subtotal)}</span>
+                      </div>
+                      {formData.shipping_cost > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Shipping:</span>
+                          <span className="font-semibold">${safeCurrency(formData.shipping_cost)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between border-t border-gray-200 pt-1">
+                        <span className="font-bold">Total:</span>
+                        <span className="font-bold text-black">${safeCurrency(total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                         <th className="px-3 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
                         <th className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
-                        <th className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Retail</th>
-                        <th className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Discount</th>
+                        <th className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Retail</th>
+                        <th className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
                         <th className="px-3 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th className="px-3 py-2.5 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                       </tr>
@@ -718,10 +783,10 @@ const AddPurchasePage = () => {
                           <td className="px-3 py-2 text-sm text-right font-medium">
                             ${safeCurrency(item.cost)}
                           </td>
-                          <td className="px-3 py-2 text-sm text-right hidden sm:table-cell">
+                          <td className="px-3 py-2 text-sm text-right">
                             ${safeCurrency(item.retail_price)}
                           </td>
-                          <td className="px-3 py-2 text-sm text-right hidden md:table-cell text-red-500">
+                          <td className="px-3 py-2 text-sm text-right text-red-500">
                             {item.discount > 0 ? `-$${safeCurrency(item.discount)}` : '-'}
                           </td>
                           <td className="px-3 py-2 text-sm text-right font-semibold text-gray-800">
@@ -742,7 +807,7 @@ const AddPurchasePage = () => {
                     <tfoot className="bg-gray-50 border-t border-gray-200">
                       <tr>
                         <td colSpan="4" className="px-3 py-2"></td>
-                        <td className="px-3 py-2 text-right text-sm font-medium text-gray-600 hidden md:table-cell">Subtotal:</td>
+                        <td className="px-3 py-2 text-right text-sm font-medium text-gray-600">Subtotal:</td>
                         <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">
                           ${safeCurrency(subtotal)}
                         </td>
@@ -750,7 +815,7 @@ const AddPurchasePage = () => {
                       </tr>
                       <tr>
                         <td colSpan="4" className="px-3 py-2"></td>
-                        <td className="px-3 py-2 text-right text-sm font-medium text-gray-600 hidden md:table-cell">Shipping:</td>
+                        <td className="px-3 py-2 text-right text-sm font-medium text-gray-600">Shipping:</td>
                         <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">
                           ${safeCurrency(formData.shipping_cost || 0)}
                         </td>
@@ -758,7 +823,7 @@ const AddPurchasePage = () => {
                       </tr>
                       <tr className="border-t border-gray-300">
                         <td colSpan="4" className="px-3 py-2"></td>
-                        <td className="px-3 py-2 text-right text-sm font-bold text-gray-800 hidden md:table-cell">Total:</td>
+                        <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">Total:</td>
                         <td className="px-3 py-2 text-right text-sm font-bold text-black">
                           ${safeCurrency(total)}
                         </td>

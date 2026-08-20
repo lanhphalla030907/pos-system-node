@@ -46,7 +46,7 @@ exports.updateMembership = asyncHandler(async (req, res) => {
 });
 exports.delete = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  await customerRepository.delete(id);
+  await customerService.delete(id);
   res.json({
     success: true,
     message: "Customer deleted successfully",

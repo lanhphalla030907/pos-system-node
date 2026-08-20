@@ -1,9 +1,10 @@
 const { getLowStock, testAlert, getStockMovement, getHistory, getInventoryValue } = require("../controller/stcok.controller");
+const { validate_token } = require("../controller/auth.controller");
+
 module.exports = (app) => {
-  // register
-  app.get("/api/low-stock", getLowStock);
- app.get("/api/test-alert", testAlert);
-  app.get("/api/stock-movement", getStockMovement);
-   app.get("/api/stock/history", getHistory);
-    app.get("/api/stock/value", getInventoryValue);
+  app.get("/api/low-stock", validate_token(), getLowStock);
+  app.get("/api/test-alert", validate_token(), testAlert);
+  app.get("/api/stock-movement", validate_token(), getStockMovement);
+  app.get("/api/stock/history", validate_token(), getHistory);
+  app.get("/api/stock/value", validate_token(), getInventoryValue);
 };

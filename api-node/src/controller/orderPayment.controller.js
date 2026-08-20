@@ -46,7 +46,11 @@ exports.getById = async (req, res) => {
 exports.create = async (req, res) => {
   try {
     const data = await orderPaymentService.create({
-      ...req.body,
+      order_id: req.body.order_id,
+      payment_method_id: req.body.payment_method_id,
+      amount: req.body.amount,
+      reference_no: req.body.reference_no,
+      remark: req.body.remark,
       create_by: req.current_id,
     });
 

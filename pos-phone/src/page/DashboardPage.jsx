@@ -733,80 +733,117 @@ const DashboardPage = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-100">
-                      <tr>
-                        <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                        <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">IP Address</th>
-                        <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Device</th>
-                        <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                        <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Message</th>
-                        <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">Time</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {recentLogins.map((item, index) => {
-                        const status = getStatusBadge(item.status || 'success');
-                        const StatusIcon = status.icon;
-                        return (
-                          <tr key={index} className="hover:bg-gray-50/80 transition-colors">
-                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
-                                  {item.username?.charAt(0).toUpperCase() || 'U'}
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium text-gray-800">{item.username || 'N/A'}</p>
-                                  <p className="text-xs text-gray-400 hidden sm:block">{item.name || 'Unknown'}</p>
-                                </div>
+                  {/* Mobile Cards */}
+                  <div className="md:hidden divide-y divide-gray-100">
+                    {recentLogins.map((item, index) => {
+                      const status = getStatusBadge(item.status || 'success');
+                      const StatusIcon = status.icon;
+                      return (
+                        <div key={index} className="p-4 hover:bg-gray-50/80 transition-colors">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
+                                {item.username?.charAt(0).toUpperCase() || 'U'}
                               </div>
-                            </td>
-                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap hidden sm:table-cell">
-                              <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                                <FiMapPin className="w-3.5 h-3.5 text-gray-400" />
-                                <span className="font-mono text-xs">{item.ip_address || 'N/A'}</span>
+                              <div>
+                                <p className="text-sm font-medium text-gray-800">{item.username || 'N/A'}</p>
+                                <p className="text-xs text-gray-400">{item.name || 'Unknown'}</p>
                               </div>
-                            </td>
-                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap hidden md:table-cell">
-                              <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                                <FiMonitor className="w-3.5 h-3.5 text-gray-400" />
-                                <span className="text-xs truncate max-w-[120px]">
-                                  {item.user_agent ? 
-                                    (item.user_agent.length > 30 
-                                      ? item.user_agent.substring(0, 30) + '...' 
-                                      : item.user_agent) 
-                                    : 'N/A'}
+                            </div>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${status.color}`}>
+                              <StatusIcon className="w-3 h-3" />
+                              {status.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-gray-400">
+                            <span className="font-medium text-gray-700">{item.action || 'Login'}</span>
+                            <span className="flex items-center gap-1">
+                              <FiClock className="w-3 h-3" />
+                              {formatDate(item.login_at)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop Table */}
+                  <div className="hidden md:block">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {recentLogins.map((item, index) => {
+                          const status = getStatusBadge(item.status || 'success');
+                          const StatusIcon = status.icon;
+                          return (
+                            <tr key={index} className="hover:bg-gray-50/80 transition-colors">
+                              <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
+                                    {item.username?.charAt(0).toUpperCase() || 'U'}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-800">{item.username || 'N/A'}</p>
+                                    <p className="text-xs text-gray-400">{item.name || 'Unknown'}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                                  <FiMapPin className="w-3.5 h-3.5 text-gray-400" />
+                                  <span className="font-mono text-xs">{item.ip_address || 'N/A'}</span>
+                                </div>
+                              </td>
+                              <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                                  <FiMonitor className="w-3.5 h-3.5 text-gray-400" />
+                                  <span className="text-xs truncate max-w-[120px]">
+                                    {item.user_agent ?
+                                      (item.user_agent.length > 30
+                                        ? item.user_agent.substring(0, 30) + '...'
+                                        : item.user_agent)
+                                      : 'N/A'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
+                                <span className="text-xs font-medium text-gray-700">
+                                  {item.action || 'Login'}
                                 </span>
-                              </div>
-                            </td>
-                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
-                              <span className="text-xs font-medium text-gray-700">
-                                {item.action || 'Login'}
-                              </span>
-                            </td>
-                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap hidden lg:table-cell">
-                              <span className="text-xs text-gray-500 truncate max-w-[150px] block">
-                                {item.message || 'User logged in successfully'}
-                              </span>
-                            </td>
-                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border ${status.color}`}>
-                                <StatusIcon className="w-3 h-3" />
-                                {status.label}
-                              </span>
-                            </td>
-                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap hidden xl:table-cell">
-                              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                                <FiClock className="w-3.5 h-3.5 text-gray-400" />
-                                <span>{formatDate(item.login_at)}</span>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                              </td>
+                              <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
+                                <span className="text-xs text-gray-500 truncate max-w-[150px] block">
+                                  {item.message || 'User logged in successfully'}
+                                </span>
+                              </td>
+                              <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border ${status.color}`}>
+                                  <StatusIcon className="w-3 h-3" />
+                                  {status.label}
+                                </span>
+                              </td>
+                              <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                  <FiClock className="w-3.5 h-3.5 text-gray-400" />
+                                  <span>{formatDate(item.login_at)}</span>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>

@@ -42,16 +42,21 @@ exports.getById = async (req, res) => {
   }
 };
 
-//  CREATE
-
 // CREATE
 exports.create = async (req, res) => {
   try {
     const data = {
-      ...req.body,
-
+      name: req.body.name,
+      gender: req.body.gender,
+      dob: req.body.dob,
+      phone: req.body.phone,
+      email: req.body.email,
+      address: req.body.address,
+      role_id: req.body.role_id,
+      salary: req.body.salary,
+      hire_date: req.body.hire_date,
+      status: req.body.status,
       image: req.file ? req.file.filename : null,
-
       create_by: req.current_id,
     };
 
@@ -69,13 +74,21 @@ exports.create = async (req, res) => {
     });
   }
 };
-//  UPDATE
 
 // UPDATE
 exports.update = async (req, res) => {
   try {
     const data = {
-      ...req.body,
+      name: req.body.name,
+      gender: req.body.gender,
+      dob: req.body.dob,
+      phone: req.body.phone,
+      email: req.body.email,
+      address: req.body.address,
+      role_id: req.body.role_id,
+      salary: req.body.salary,
+      hire_date: req.body.hire_date,
+      status: req.body.status,
     };
 
     if (req.file) {

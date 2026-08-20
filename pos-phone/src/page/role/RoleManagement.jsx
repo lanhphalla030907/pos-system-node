@@ -387,104 +387,152 @@ const RoleManagement = () => {
             </div>
           ) : roles.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <span className="flex items-center gap-1">
-                        <FiHash className="w-3 h-3" /> ID
-                      </span>
-                    </th>
-                    <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <span className="flex items-center gap-1">
-                        <FiTag className="w-3 h-3" /> Name
-                      </span>
-                    </th>
-                    <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
-                      <span className="flex items-center gap-1">
-                        <FiLock className="w-3 h-3" /> Code
-                      </span>
-                    </th>
-                    <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                      Description
-                    </th>
-                    <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
-                      <span className="flex items-center gap-1">
-                        <FiClock className="w-3 h-3" /> Created
-                      </span>
-                    </th>
-                    <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
-                      Created By
-                    </th>
-                    <th className="text-right py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {roles.map((role) => (
-                    <tr
-                      key={role.id}
-                      className="hover:bg-gray-50/80 transition-colors group"
-                    >
-                      <td className="py-3 px-4 sm:px-6">
-                        <span className="text-sm text-gray-400 font-mono">
-                          #{role.id}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 sm:px-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
-                            {role.name?.charAt(0).toUpperCase() || "R"}
-                          </div>
-                          <span className="text-sm font-medium text-gray-800">
-                            {role.name}
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {roles.map((role) => (
+                  <div key={role.id} className="p-4 hover:bg-gray-50/80 transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
+                          {role.name?.charAt(0).toUpperCase() || "R"}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{role.name}</p>
+                          <span className="inline-flex px-2 py-0.5 text-[10px] font-mono font-medium bg-gray-100 text-gray-700 rounded">
+                            {role.code}
                           </span>
                         </div>
-                      </td>
-                      <td className="py-3 px-4 sm:px-6 hidden sm:table-cell">
-                        <span className="inline-flex px-2.5 py-1 text-xs font-mono font-medium bg-gray-100 text-gray-700 rounded-lg">
-                          {role.code}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEdit(role.id)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <FiEdit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(role.id, role.name)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    {role.description && (
+                      <p className="text-xs text-gray-500 mb-2 line-clamp-2">{role.description}</p>
+                    )}
+                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <FiClock className="w-3 h-3" />
+                        {formatDate(role.create_at)}
+                      </span>
+                      <span>by {role.create_by_name || "System"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <span className="flex items-center gap-1">
+                          <FiHash className="w-3 h-3" /> ID
                         </span>
-                      </td>
-                      <td className="py-3 px-4 sm:px-6 hidden md:table-cell">
-                        <span className="text-sm text-gray-600 line-clamp-1 max-w-[150px]">
-                          {role.description || "-"}
+                      </th>
+                      <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <span className="flex items-center gap-1">
+                          <FiTag className="w-3 h-3" /> Name
                         </span>
-                      </td>
-                      <td className="py-3 px-4 sm:px-6 hidden lg:table-cell">
-                        <span className="text-sm text-gray-500 flex items-center gap-1.5">
-                          <FiClock className="w-3.5 h-3.5 text-gray-400" />
-                          {formatDate(role.create_at)}
+                      </th>
+                      <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <span className="flex items-center gap-1">
+                          <FiLock className="w-3 h-3" /> Code
                         </span>
-                      </td>
-                      <td className="py-3 px-4 sm:px-6 hidden xl:table-cell">
-                        <span className="text-sm text-gray-500">
-                          {role.create_by_name || "System"}
+                      </th>
+                      <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <span className="flex items-center gap-1">
+                          <FiClock className="w-3 h-3" /> Created
                         </span>
-                      </td>
-                      <td className="py-3 px-4 sm:px-6 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => handleEdit(role.id)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <FiEdit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(role.id, role.name)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+                      </th>
+                      <th className="text-left py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created By
+                      </th>
+                      <th className="text-right py-3 px-4 sm:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {roles.map((role) => (
+                      <tr
+                        key={role.id}
+                        className="hover:bg-gray-50/80 transition-colors group"
+                      >
+                        <td className="py-3 px-4 sm:px-6">
+                          <span className="text-sm text-gray-400 font-mono">
+                            #{role.id}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 sm:px-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
+                              {role.name?.charAt(0).toUpperCase() || "R"}
+                            </div>
+                            <span className="text-sm font-medium text-gray-800">
+                              {role.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 sm:px-6">
+                          <span className="inline-flex px-2.5 py-1 text-xs font-mono font-medium bg-gray-100 text-gray-700 rounded-lg">
+                            {role.code}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 sm:px-6">
+                          <span className="text-sm text-gray-600 line-clamp-1 max-w-[150px]">
+                            {role.description || "-"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 sm:px-6">
+                          <span className="text-sm text-gray-500 flex items-center gap-1.5">
+                            <FiClock className="w-3.5 h-3.5 text-gray-400" />
+                            {formatDate(role.create_at)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 sm:px-6">
+                          <span className="text-sm text-gray-500">
+                            {role.create_by_name || "System"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 sm:px-6 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleEdit(role.id)}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <FiEdit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(role.id, role.name)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete"
+                            >
+                              <FiTrash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16">

@@ -101,27 +101,22 @@ exports.getCustomers = async () => {
   return Number(rows[0].customers);
 };
 exports.getSalesChart = async (period = "daily") => {
-  let dateFormat;
+  const dateFormatMap = {
+    daily: "%Y-%m-%d",
+    weekly: "%Y-%u",
+    monthly: "%Y-%m",
+    yearly: "%Y",
+  };
 
-  switch (period) {
-    case "daily":
-      dateFormat = "%Y-%m-%d";
-      break;
-    case "weekly":
-      dateFormat = "%Y-%u";
-      break;
-    case "monthly":
-      dateFormat = "%Y-%m";
-      break;
-    case "yearly":
-      dateFormat = "%Y";
-      break;
-    default:
-      throw new Error("Invalid period. Use daily, weekly, monthly, or yearly");
+  if (!dateFormatMap[period]) {
+    throw new Error("Invalid period. Use daily, weekly, monthly, or yearly");
   }
+
+  const dateFormat = dateFormatMap[period];
+
   const sql = `
     SELECT
-      DATE_FORMAT(o.create_at, '${dateFormat}') AS period,
+      DATE_FORMAT(o.create_at, ?) AS period,
       SUM(o.total_amount) AS sales,
       COALESCE(SUM(cog.cost_of_goods), 0) AS cost_of_goods
 
@@ -138,37 +133,27 @@ exports.getSalesChart = async (period = "daily") => {
     ) cog
       ON cog.order_id = o.id
 
-    GROUP BY DATE_FORMAT(o.create_at, '${dateFormat}')
+    GROUP BY DATE_FORMAT(o.create_at, ?)
     ORDER BY period ASC
   `;
 
-  const [rows] = await db.query(sql);
+  const [rows] = await db.query(sql, [dateFormat, dateFormat]);
 
   return rows;
 };
 exports.getProfitChart = async (period = "monthly") => {
-  let dateFormat;
+  const dateFormatMap = {
+    daily: "%Y-%m-%d",
+    weekly: "%Y-%u",
+    monthly: "%Y-%m",
+    yearly: "%Y",
+  };
 
-  switch (period) {
-    case "daily":
-      dateFormat = "%Y-%m-%d";
-      break;
-
-    case "weekly":
-      dateFormat = "%Y-%u";
-      break;
-
-    case "monthly":
-      dateFormat = "%Y-%m";
-      break;
-
-    case "yearly":
-      dateFormat = "%Y";
-      break;
-
-    default:
-      throw new Error("Invalid period. Use daily, weekly, monthly, or yearly");
+  if (!dateFormatMap[period]) {
+    throw new Error("Invalid period. Use daily, weekly, monthly, or yearly");
   }
+
+  const dateFormat = dateFormatMap[period];
 
   const sql = `
     SELECT
@@ -179,19 +164,19 @@ exports.getProfitChart = async (period = "monthly") => {
 
     FROM (
       SELECT DISTINCT
-        DATE_FORMAT(create_at, '${dateFormat}') AS period
+        DATE_FORMAT(create_at, ?) AS period
       FROM orders
 
       UNION
 
       SELECT DISTINCT
-        DATE_FORMAT(create_at, '${dateFormat}') AS period
+        DATE_FORMAT(create_at, ?) AS period
       FROM expense
     ) periods
 
     LEFT JOIN (
       SELECT
-        DATE_FORMAT(o.create_at, '${dateFormat}') AS period,
+        DATE_FORMAT(o.create_at, ?) AS period,
         SUM(o.total_amount) AS sales,
         COALESCE(SUM(cog.cost_of_goods), 0) AS cost_of_goods
 
@@ -208,23 +193,23 @@ exports.getProfitChart = async (period = "monthly") => {
       ) cog
         ON cog.order_id = o.id
 
-      GROUP BY DATE_FORMAT(o.create_at, '${dateFormat}')
+      GROUP BY DATE_FORMAT(o.create_at, ?)
     ) s
       ON s.period = periods.period
 
     LEFT JOIN (
       SELECT
-        DATE_FORMAT(create_at, '${dateFormat}') AS period,
+        DATE_FORMAT(create_at, ?) AS period,
         SUM(amount) AS expense
       FROM expense
-      GROUP BY DATE_FORMAT(create_at, '${dateFormat}')
+      GROUP BY DATE_FORMAT(create_at, ?)
     ) e
       ON e.period = periods.period
 
     ORDER BY periods.period ASC
   `;
 
-  const [rows] = await db.query(sql);
+  const [rows] = await db.query(sql, [dateFormat, dateFormat, dateFormat, dateFormat, dateFormat, dateFormat]);
 
   return rows;
 };

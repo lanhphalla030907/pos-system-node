@@ -648,34 +648,28 @@ exports.getSalesChart = async (query) => {
     date_from,
     date_to,
   } = query;
-  let groupSelect = "";
-  let groupBy = "";
-  let orderBy = "";
-  switch (group_by) {
-    case "day":
-      groupSelect = `
-        DAY(o.create_at) AS label,
-        DATE(o.create_at) AS full_date
-      `;
-      groupBy = `DATE(o.create_at)`;
-      orderBy = `DATE(o.create_at)`;
-      break;
-    case "year":
-      groupSelect = `
-        YEAR(o.create_at) AS label
-      `;
-      groupBy = `YEAR(o.create_at)`;
-      orderBy = `YEAR(o.create_at)`;
-      break;
-    default: // month
-      groupSelect = `
-        MONTH(o.create_at) AS month,
-        DATE_FORMAT(o.create_at,'%b') AS label
-      `;
-      groupBy = `MONTH(o.create_at)`;
-      orderBy = `MONTH(o.create_at)`;
-      break;
-  }
+
+  const allowedGroupBy = {
+    day: {
+      groupSelect: `DAY(o.create_at) AS label, DATE(o.create_at) AS full_date`,
+      groupBy: `DATE(o.create_at)`,
+      orderBy: `DATE(o.create_at)`,
+    },
+    year: {
+      groupSelect: `YEAR(o.create_at) AS label`,
+      groupBy: `YEAR(o.create_at)`,
+      orderBy: `YEAR(o.create_at)`,
+    },
+    month: {
+      groupSelect: `MONTH(o.create_at) AS month, DATE_FORMAT(o.create_at,'%b') AS label`,
+      groupBy: `MONTH(o.create_at)`,
+      orderBy: `MONTH(o.create_at)`,
+    },
+  };
+
+  const config = allowedGroupBy[group_by] || allowedGroupBy.month;
+  const { groupSelect, groupBy, orderBy } = config;
+
   let sql = `
     SELECT
       ${groupSelect},

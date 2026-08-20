@@ -235,6 +235,7 @@ function Supplier() {
       key: "name",
       title: "Supplier Information",
       width: "280px",
+      mobilePrimary: true,
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-700 font-semibold text-sm">
@@ -271,6 +272,7 @@ function Supplier() {
       key: "address",
       title: "Location",
       width: "200px",
+      mobile: false,
       render: (row) => (
         <div className="flex items-start gap-2 text-sm text-gray-700">
           <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
@@ -282,6 +284,7 @@ function Supplier() {
       key: "website",
       title: "Website",
       width: "160px",
+      mobile: false,
       render: (row) =>
         row.website ? (
           <a
@@ -301,6 +304,7 @@ function Supplier() {
       key: "note",
       title: "Note",
       width: "150px",
+      mobile: false,
       render: (row) => (
         <div className="text-sm text-gray-600 line-clamp-2">
           {row.note || <span className="text-gray-400">No notes</span>}
@@ -311,6 +315,7 @@ function Supplier() {
       key: "create_by",
       title: "Created By",
       width: "170px",
+      mobile: false,
       render: (row) => (
         <div className="text-sm text-gray-600 line-clamp-2">
           {row.create_by || <span className="text-gray-400">—</span>}

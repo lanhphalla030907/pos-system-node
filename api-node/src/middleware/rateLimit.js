@@ -14,13 +14,13 @@ const loginLimiter = rateLimit({
 // General API Rate Limit
 const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 100, // 100 requests
+  max: 300, // 300 requests
   standardHeaders: true,
   legacyHeaders: false,
 
   message: {
     success: false,
-    message: "Too many requests. Please try again later.",
+    message: "Too many requests. Please wait a moment and try again.",
   },
 });
 module.exports = {

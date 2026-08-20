@@ -356,9 +356,9 @@ const AllExpense = () => {
         {/* Main Card */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
           {/* Filters */}
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[200px]">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50/50">
+          <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
                 <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
@@ -424,128 +424,184 @@ const AllExpense = () => {
               <p className="text-sm text-gray-400 mt-3">Loading expenses...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ref No
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
-                      Remark
-                    </th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {expenses.map((expense) => (
-                    <tr
-                      key={expense.id}
-                      className="hover:bg-gray-50/80 transition-colors duration-150"
-                    >
-                      <td className="py-3 px-4">
-                        <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">
+            <>
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {expenses.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <FiFileText className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 font-medium">No expenses found</p>
+                    </div>
+                  </div>
+                ) : expenses.map((expense) => (
+                  <div key={expense.id} className="p-4 hover:bg-gray-50/80 transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
                           {expense.ref_no}
                         </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-sm font-medium text-gray-800">
-                          {expense.name}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${getTypeColor(expense.expense_type_id)}`}>
-                          {expense.expense_type_name || getTypeName(expense.expense_type_id)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className="text-sm font-semibold text-gray-900">
-                          {formatCurrency(expense.amount)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 hidden md:table-cell">
-                        <span className="text-sm text-gray-500 line-clamp-1">
-                          {expense.remark || "—"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                        <p className="text-sm font-medium text-gray-800 mt-1">{expense.name}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEdit(expense)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <FiEdit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(expense.id, expense.name)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      <span className={`inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full ${getTypeColor(expense.expense_type_id)}`}>
+                        {expense.expense_type_name || getTypeName(expense.expense_type_id)}
+                      </span>
+                      {expense.remark && (
+                        <span className="text-xs text-gray-400 truncate max-w-[150px]">{expense.remark}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-400">Amount</p>
+                        <p className="font-semibold text-gray-900">{formatCurrency(expense.amount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Date</p>
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
                           <FiCalendar className="w-3 h-3 text-gray-400" />
                           {expense.expense_date
-                            ? new Date(expense.expense_date).toLocaleDateString(
-                                "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                }
-                              )
+                            ? new Date(expense.expense_date).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })
                             : "-"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex justify-end gap-1">
-                          <button
-                            onClick={() => handleEdit(expense)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <FiEdit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(expense.id, expense.name)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {expenses.length === 0 && (
-                    <tr>
-                      <td colSpan="7" className="py-16 text-center">
-                        <div className="flex flex-col items-center">
-                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                            <FiFileText className="w-8 h-8 text-gray-400" />
-                          </div>
-                          <p className="text-gray-500 font-medium">No expenses found</p>
-                          <p className="text-sm text-gray-400 mt-1">
-                            {filters.search || filters.expense_type_id || filters.date_from || filters.date_to
-                              ? "Try adjusting your filters"
-                              : "Start by adding your first expense"}
-                          </p>
-                          {!filters.search && !filters.expense_type_id && !filters.date_from && !filters.date_to && (
-                            <button
-                              onClick={openCreateModal}
-                              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-all"
-                            >
-                              <FiPlus className="w-4 h-4" />
-                              Add Expense
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                {expenses.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <FiFileText className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 font-medium">No expenses found</p>
+                    </div>
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Ref No
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Category
+                        </th>
+                        <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Remark
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="text-right py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {expenses.map((expense) => (
+                        <tr
+                          key={expense.id}
+                          className="hover:bg-gray-50/80 transition-colors duration-150"
+                        >
+                          <td className="py-3 px-4">
+                            <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">
+                              {expense.ref_no}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-sm font-medium text-gray-800">
+                              {expense.name}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${getTypeColor(expense.expense_type_id)}`}>
+                              {expense.expense_type_name || getTypeName(expense.expense_type_id)}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="text-sm font-semibold text-gray-900">
+                              {formatCurrency(expense.amount)}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-sm text-gray-500 line-clamp-1">
+                              {expense.remark || "—"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-sm text-gray-500 flex items-center gap-1">
+                              <FiCalendar className="w-3 h-3 text-gray-400" />
+                              {expense.expense_date
+                                ? new Date(expense.expense_date).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    }
+                                  )
+                                : "-"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex justify-end gap-1">
+                              <button
+                                onClick={() => handleEdit(expense)}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Edit"
+                              >
+                                <FiEdit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(expense.id, expense.name)}
+                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Delete"
+                              >
+                                <FiTrash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
           )}
 
           {/* Footer */}

@@ -28,8 +28,12 @@ exports.getById = asyncHandler(async (req, res) => {
 // Create
 exports.create = asyncHandler(async (req, res) => {
   const data = {
-    ...req.body,
-    create_by: req.user.id,
+    expense_type_id: req.body.expense_type_id,
+    name: req.body.name,
+    amount: req.body.amount,
+    date: req.body.date,
+    remark: req.body.remark,
+    create_by: req.current_id,
   };
   const result = await expenseService.create(data);
   res.status(201).json({
@@ -41,7 +45,14 @@ exports.create = asyncHandler(async (req, res) => {
 // Update
 exports.update = asyncHandler(async (req, res) => {
   const id = req.params.id;
-  const result = await expenseService.update(id, req.body);
+  const data = {
+    expense_type_id: req.body.expense_type_id,
+    name: req.body.name,
+    amount: req.body.amount,
+    date: req.body.date,
+    remark: req.body.remark,
+  };
+  const result = await expenseService.update(id, data);
   if (!result) {
     return res.status(404).json({
       success: false,

@@ -40,3 +40,10 @@ exports.updateMembership = async (customerId, orderAmount) => {
   await customerRepository.updateType(customerId, type);
   return customer;
 };
+exports.delete = async (id) => {
+  const customer = await customerRepository.getById(id);
+  if (!customer) {
+    throw new Error("Customer not found");
+  }
+  return await customerRepository.delete(id);
+};

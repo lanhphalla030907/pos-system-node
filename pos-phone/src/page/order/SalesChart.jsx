@@ -522,77 +522,113 @@ const SalesChart = () => {
             </div>
           ) : topProducts.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="text-left py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">#</th>
-                    <th className="text-left py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Product</th>
-                    <th className="text-right py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">Sold</th>
-                    <th className="text-right py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Revenue</th>
-                    <th className="text-right py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider hidden md:table-cell">Share</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {topProducts.map((product, index) => {
-                    const totalRevenue = topProducts.reduce((sum, p) => sum + (p.total_sales || 0), 0);
-                    const percentage = totalRevenue > 0 ? ((product.total_sales || 0) / totalRevenue * 100).toFixed(1) : 0;
-                    
-                    const rankColors = [
-                      'bg-black text-white',
-                      'bg-gray-700 text-white',
-                      'bg-gray-600 text-white',
-                      'bg-gray-500 text-white',
-                      'bg-gray-400 text-white',
-                    ];
-                    
-                    return (
-                      <tr key={product.product_id || index} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="py-3 px-3">
-                          <span className={`inline-flex items-center justify-center w-7 h-7 text-xs font-bold rounded-full ${rankColors[index] || 'bg-gray-200 text-gray-600'}`}>
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-gray-50">
+                {topProducts.map((product, index) => {
+                  const totalRevenue = topProducts.reduce((sum, p) => sum + (p.total_sales || 0), 0);
+                  const percentage = totalRevenue > 0 ? ((product.total_sales || 0) / totalRevenue * 100).toFixed(1) : 0;
+                  const rankColors = [
+                    'bg-black text-white',
+                    'bg-gray-700 text-white',
+                    'bg-gray-600 text-white',
+                    'bg-gray-500 text-white',
+                    'bg-gray-400 text-white',
+                  ];
+
+                  return (
+                    <div key={product.product_id || index} className="p-3 hover:bg-gray-50/50 transition-colors">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full ${rankColors[index] || 'bg-gray-200 text-gray-600'}`}>
                             {index + 1}
                           </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-xs">
-                              {product.product_name?.charAt(0).toUpperCase() || 'P'}
+                          <p className="text-sm font-medium text-gray-800">{product.product_name || 'Unknown Product'}</p>
+                        </div>
+                        <p className="text-sm font-bold text-gray-900">{formatCurrency(product.total_sales || 0)}</p>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-400 ml-8">
+                        <span>Sold: {product.total_qty || 0}</span>
+                        <span>{percentage}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">#</th>
+                      <th className="text-left py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Product</th>
+                      <th className="text-right py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Sold</th>
+                      <th className="text-right py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Revenue</th>
+                      <th className="text-right py-3 px-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Share</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {topProducts.map((product, index) => {
+                      const totalRevenue = topProducts.reduce((sum, p) => sum + (p.total_sales || 0), 0);
+                      const percentage = totalRevenue > 0 ? ((product.total_sales || 0) / totalRevenue * 100).toFixed(1) : 0;
+
+                      const rankColors = [
+                        'bg-black text-white',
+                        'bg-gray-700 text-white',
+                        'bg-gray-600 text-white',
+                        'bg-gray-500 text-white',
+                        'bg-gray-400 text-white',
+                      ];
+
+                      return (
+                        <tr key={product.product_id || index} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="py-3 px-3">
+                            <span className={`inline-flex items-center justify-center w-7 h-7 text-xs font-bold rounded-full ${rankColors[index] || 'bg-gray-200 text-gray-600'}`}>
+                              {index + 1}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-xs">
+                                {product.product_name?.charAt(0).toUpperCase() || 'P'}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-800">
+                                  {product.product_name || 'Unknown Product'}
+                                </p>
+                                <p className="text-xs text-gray-400 font-mono">
+                                  {product.product_code || 'N/A'}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-800">
-                                {product.product_name || 'Unknown Product'}
-                              </p>
-                              <p className="text-xs text-gray-400 font-mono hidden sm:block">
-                                {product.product_code || 'N/A'}
-                              </p>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <span className="text-sm font-semibold text-gray-700">
+                              {product.total_qty || 0}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <span className="text-sm font-bold text-gray-900">
+                              {formatCurrency(product.total_sales || 0)}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-xs text-gray-500">{percentage}%</span>
+                              <div className="w-16 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className="bg-emerald-500 h-1.5 rounded-full transition-all"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 text-right hidden sm:table-cell">
-                          <span className="text-sm font-semibold text-gray-700">
-                            {product.total_qty || 0}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <span className="text-sm font-bold text-gray-900">
-                            {formatCurrency(product.total_sales || 0)}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right hidden md:table-cell">
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="text-xs text-gray-500">{percentage}%</span>
-                            <div className="w-16 bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                              <div 
-                                className="bg-emerald-500 h-1.5 rounded-full transition-all"
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
+                          </td>
+                        </tr>
                     );
                   })}
                 </tbody>
               </table>
+            </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12">

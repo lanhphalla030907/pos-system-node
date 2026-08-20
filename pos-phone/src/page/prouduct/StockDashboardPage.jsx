@@ -508,54 +508,96 @@ const StockDashboardPage = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Barcode</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Current Qty</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Min Stock</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {lowStockProducts.map((item, index) => {
-                    const stockStatus = item.qty === 0 ? 'Out of Stock' : 'Low Stock';
-                    const statusColor = item.qty === 0 
-                      ? 'bg-red-100 text-red-700 border-red-200' 
-                      : 'bg-amber-100 text-amber-700 border-amber-200';
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {lowStockProducts.map((item) => {
+                  const stockStatus = item.qty === 0 ? 'Out of Stock' : 'Low Stock';
+                  const statusColor = item.qty === 0
+                    ? 'bg-red-100 text-red-700 border-red-200'
+                    : 'bg-amber-100 text-amber-700 border-amber-200';
 
-                    return (
-                      <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
-                              {item.name?.charAt(0).toUpperCase() || 'P'}
-                            </div>
-                            <span className="text-sm font-medium text-gray-800">{item.name}</span>
+                  return (
+                    <div key={item.id} className="p-4 hover:bg-gray-50/80 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
+                            {item.name?.charAt(0).toUpperCase() || 'P'}
                           </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
-                          {item.barcode || '-'}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-red-600">
-                          {item.qty}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500 hidden sm:table-cell">
-                          {item.min_stock || 0}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${statusColor}`}>
-                            {stockStatus}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                            <p className="text-xs text-gray-400">{item.barcode || '-'}</p>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-medium border ${statusColor}`}>
+                          {stockStatus}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs text-gray-400">Current Qty</p>
+                          <p className="font-medium text-red-600">{item.qty}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Min Stock</p>
+                          <p className="text-gray-500">{item.min_stock || 0}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Current Qty</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Min Stock</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {lowStockProducts.map((item, index) => {
+                      const stockStatus = item.qty === 0 ? 'Out of Stock' : 'Low Stock';
+                      const statusColor = item.qty === 0
+                        ? 'bg-red-100 text-red-700 border-red-200'
+                        : 'bg-amber-100 text-amber-700 border-amber-200';
+
+                      return (
+                        <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 text-xs font-medium">
+                                {item.name?.charAt(0).toUpperCase() || 'P'}
+                              </div>
+                              <span className="text-sm font-medium text-gray-800">{item.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                            {item.barcode || '-'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium text-red-600">
+                            {item.qty}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-500">
+                            {item.min_stock || 0}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${statusColor}`}>
+                              {stockStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

@@ -21,8 +21,11 @@ exports.getList = async (req, res) => {
 //  REGISTER
 exports.register = async (req, res) => {
   try {
+    const { name, username, password } = req.body;
     const result = await authService.register({
-      ...req.body,
+      name,
+      username,
+      password,
       create_by: req.current_id,
     });
 

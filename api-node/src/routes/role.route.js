@@ -1,4 +1,5 @@
 const { validate_token } = require("../controller/auth.controller");
+const { checkPermission } = require("../middleware/checkPermission");
 
 const {
   getAll,
@@ -16,11 +17,11 @@ module.exports = (app) => {
   app.get("/api/role/:id", validate_token(), getById);
 
   // Create role
-  app.post("/api/role", validate_token(), create);
+  app.post("/api/role", validate_token(), checkPermission("role.create"), create);
 
   // Update role
-  app.put("/api/role/:id", validate_token(), update);
+  app.put("/api/role/:id", validate_token(), checkPermission("role.update"), update);
 
   // Delete role
-  app.delete("/api/role/:id", validate_token(), remove);
+  app.delete("/api/role/:id", validate_token(), checkPermission("role.delete"), remove);
 };

@@ -159,58 +159,105 @@ const StockHistoryPage = () => {
               <p className="text-gray-400 text-sm mt-1">Try adjusting your filters</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {stockHistory.map((item) => {
-                    const type = getTypeBadge(item.movement_type);
-                    return (
-                      <tr key={item.detail_id} className="hover:bg-gray-50 transition">
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(item.movement_date)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{item.product_name}</p>
-                            {item.barcode && (
-                              <p className="text-xs text-gray-400">{item.barcode}</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${type.color}`}>
-                            {type.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
-                          {item.qty}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
-                          {formatCurrency(item.unit_cost)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-semibold">
-                          {formatCurrency(item.amount)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                          <span className="text-blue-600 font-medium">{item.reference_no}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {stockHistory.map((item) => {
+                  const type = getTypeBadge(item.movement_type);
+                  return (
+                    <div key={item.detail_id} className="p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{item.product_name}</p>
+                          {item.barcode && (
+                            <p className="text-xs text-gray-400">{item.barcode}</p>
+                          )}
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${type.color}`}>
+                          {type.label}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs text-gray-400">Qty</p>
+                          <p className="font-medium text-gray-900">{item.qty}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Unit Cost</p>
+                          <p className="text-gray-600">{formatCurrency(item.unit_cost)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Amount</p>
+                          <p className="font-semibold text-gray-900">{formatCurrency(item.amount)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Reference</p>
+                          <span className="text-blue-600 font-medium text-xs">{item.reference_no}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-400">Date</p>
+                          <p className="text-xs text-gray-500">{formatDate(item.movement_date)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {stockHistory.map((item) => {
+                      const type = getTypeBadge(item.movement_type);
+                      return (
+                        <tr key={item.detail_id} className="hover:bg-gray-50 transition">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(item.movement_date)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{item.product_name}</p>
+                              {item.barcode && (
+                                <p className="text-xs text-gray-400">{item.barcode}</p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${type.color}`}>
+                              {type.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
+                            {item.qty}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
+                            {formatCurrency(item.unit_cost)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-semibold">
+                            {formatCurrency(item.amount)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                            <span className="text-blue-600 font-medium">{item.reference_no}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 

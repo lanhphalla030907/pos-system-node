@@ -61,9 +61,9 @@ exports.deleteAllNotifications = asyncHandler(async (req, res) => {
 });
 
 exports.createNotification = asyncHandler(async (req, res) => {
-  const { title, message, type, user_id } = req.body;
+  const { title, message, type } = req.body;
   const id = await notificationService.createNotification({
-    user_id: user_id || req.current_id,
+    user_id: req.current_id,
     title,
     message,
     type: type || "system",

@@ -1,4 +1,5 @@
 const { validate_token } = require("../controller/auth.controller");
+const { checkPermission } = require("../middleware/checkPermission");
 
 const {
   getAll,
@@ -22,6 +23,7 @@ module.exports = (app) => {
   app.post(
     "/api/employee",
     validate_token(),
+    checkPermission("employee.create"),
     upload("employee").single("image"),
     create,
   );
@@ -30,13 +32,14 @@ module.exports = (app) => {
   app.put(
     "/api/employee/:id",
     validate_token(),
+    checkPermission("employee.update"),
     upload("employee").single("image"),
     update,
   );
-  app.post("/api/employee/:id/create-account", validate_token(), createAccount);
+  app.post("/api/employee/:id/create-account", validate_token(), checkPermission("employee.create"), createAccount);
   // Update employee status
-  app.put("/api/employee/:id/status", validate_token(), updateStatus);
+  app.put("/api/employee/:id/status", validate_token(), checkPermission("employee.update"), updateStatus);
 
   // Delete employee
-  app.delete("/api/employee/:id", validate_token(), remove);
+  app.delete("/api/employee/:id", validate_token(), checkPermission("employee.delete"), remove);
 };

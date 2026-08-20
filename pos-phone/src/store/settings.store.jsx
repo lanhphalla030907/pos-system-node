@@ -16,6 +16,8 @@ export const SettingsProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
+    const { getAccessToken } = await import("./profile.store");
+    if (!getAccessToken()) return { success: false };
     const res = await getSettings();
     if (res?.success) setSettings(res.data || {});
     return res;

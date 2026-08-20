@@ -3,7 +3,12 @@ const bcrypt = require("bcrypt");
 const loginHistory = require("./loginHistory.service");
 const notificationService = require("./notification.service");
 const jwt = require("jsonwebtoken");
-const keyToken = "LWEJROI32209";
+const AppError = require("../util/AppError");
+const keyToken = process.env.JWT_SECRET;
+if (!keyToken) {
+  console.error("FATAL: JWT_SECRET environment variable is not set");
+  process.exit(1);
+}
 //  REGISTER
 exports.register = async (data) => {
   // Check username already exists
@@ -13,8 +18,16 @@ exports.register = async (data) => {
     throw new Error("Username already exists");
   }
 
+  // Password complexity validation
+  if (!data.password || data.password.length < 6) {
+    throw new Error("Password must be at least 6 characters");
+  }
+
   // Hash password
   data.password = bcrypt.hashSync(data.password, 10);
+
+  // Force default role - never trust client input for role_id
+  data.role_id = data.role_id || 3;
 
   // Default active
   if (data.is_active === undefined) {
@@ -33,18 +46,18 @@ exports.login = async (username, password, req) => {
   const user = await authRepository.findByUsername(username);
   // Username not found
   if (!user) {
-    await loginHistory.loginFailed(null, "Username not found", req);
-    throw new Error("Username not found");
+    await loginHistory.loginFailed(null, "Invalid credentials", req);
+    throw new Error("Invalid username or password");
   }
   if (!user.is_active) {
-  throw new AppError("Your account is inactive", 403);
-}
+    throw new AppError("Your account is inactive", 403);
+  }
   const isCorrectPw = bcrypt.compareSync(password, user.password);
   // Password incorrect
   if (!isCorrectPw) {
-    await loginHistory.loginFailed(user.id, "Password not match", req);
+    await loginHistory.loginFailed(user.id, "Invalid credentials", req);
 
-    throw new Error("Password not match");
+    throw new Error("Invalid username or password");
   }
 
   delete user.password;
@@ -129,7 +142,7 @@ const createAccessToken = async (user) => {
   };
 
   return jwt.sign({ data: payload }, keyToken, {
-    expiresIn: "7d",
+    expiresIn: process.env.JWT_EXPIRES_IN || "1h",
   });
 };
 exports.getList = async () => {

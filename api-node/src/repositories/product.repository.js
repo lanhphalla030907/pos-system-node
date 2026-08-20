@@ -253,7 +253,7 @@ exports.getTopSale = async (query) => {
       AND DATE(o.create_at) >= ?
     `;
 
-    prams.push(date_from);
+    params.push(date_from);
   }
   if (date_to) {
     sql += `

@@ -147,14 +147,58 @@ const OrderDetailModal = ({ order, onClose }) => {
               <span className="text-xs text-gray-400">({order.items?.length || 0} items)</span>
             </div>
             <div className="border border-gray-200 rounded-xl overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {order.items?.map((item, index) => {
+                  const price = parseFloat(item.price) || 0;
+                  const productDiscount = parseFloat(item.discount) || 0;
+                  const memberDiscount = parseFloat(item.member_discount) || 0;
+                  const qty = parseFloat(item.qty) || 0;
+                  const finalTotal = parseFloat(item.total) || 0;
+
+                  return (
+                    <div key={index} className="p-4 hover:bg-gray-50/80 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          {item.product_image ? (
+                            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                              <ProductImage image={item.product_image} alt={item.product_name} size="md" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                              <FiPackage className="w-4 h-4 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{item.product_name}</p>
+                            {(productDiscount > 0 || memberDiscount > 0) && (
+                              <div className="flex gap-2 mt-0.5">
+                                {productDiscount > 0 && <span className="text-[10px] text-red-500">-{productDiscount}%</span>}
+                                {memberDiscount > 0 && <span className="text-[10px] text-emerald-500">Member -{memberDiscount}%</span>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-sm font-bold text-gray-800">{formatCurrency(finalTotal)}</p>
+                      </div>
+                      <div className="flex gap-4 text-xs ml-13">
+                        <div><span className="text-gray-400">Qty: </span><span className="font-medium">{qty}</span></div>
+                        <div><span className="text-gray-400">Price: </span><span>{formatCurrency(price)}</span></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Discount</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                     </tr>
                   </thead>
@@ -184,7 +228,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                           </td>
                           <td className="px-4 py-3 text-sm text-center font-medium">{qty}</td>
                           <td className="px-4 py-3 text-sm text-right">{formatCurrency(price)}</td>
-                          <td className="px-4 py-3 text-sm text-right hidden sm:table-cell">
+                          <td className="px-4 py-3 text-sm text-right">
                             {(productDiscount > 0 || memberDiscount > 0) ? (
                               <div className="space-y-0.5">
                                 {productDiscount > 0 && (
@@ -208,7 +252,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                   <tfoot className="bg-gray-50 border-t border-gray-200">
                     <tr>
                       <td colSpan="3" className="px-4 py-2"></td>
-                      <td className="px-4 py-2 text-right text-sm font-medium text-gray-600 hidden sm:table-cell">Subtotal:</td>
+                       <td className="px-4 py-2 text-right text-sm font-medium text-gray-600">Subtotal:</td>
                       <td className="px-4 py-2 text-right font-semibold text-gray-800">
                         {formatCurrency(subtotal)}
                       </td>
@@ -216,7 +260,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                     {totalProductDiscount > 0 && (
                       <tr>
                         <td colSpan="3" className="px-4 py-2"></td>
-                        <td className="px-4 py-2 text-right text-sm text-red-500 font-medium hidden sm:table-cell">Product Discount:</td>
+                         <td className="px-4 py-2 text-right text-sm text-red-500 font-medium">Product Discount:</td>
                         <td className="px-4 py-2 text-right text-sm text-red-500 font-semibold">
                           -{formatCurrency(totalProductDiscount)}
                         </td>
@@ -225,7 +269,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                     {totalMemberDiscount > 0 && (
                       <tr>
                         <td colSpan="3" className="px-4 py-2"></td>
-                        <td className="px-4 py-2 text-right text-sm text-emerald-500 font-medium hidden sm:table-cell">Member Discount:</td>
+                         <td className="px-4 py-2 text-right text-sm text-emerald-500 font-medium">Member Discount:</td>
                         <td className="px-4 py-2 text-right text-sm text-emerald-500 font-semibold">
                           -{formatCurrency(totalMemberDiscount)}
                         </td>
@@ -234,7 +278,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                     {totalDiscount > 0 && (
                       <tr>
                         <td colSpan="3" className="px-4 py-2"></td>
-                        <td className="px-4 py-2 text-right text-sm text-purple-500 font-medium hidden sm:table-cell">Total Discount:</td>
+                         <td className="px-4 py-2 text-right text-sm text-purple-500 font-medium">Total Discount:</td>
                         <td className="px-4 py-2 text-right text-sm text-purple-500 font-semibold">
                           -{formatCurrency(totalDiscount)}
                         </td>
@@ -242,21 +286,21 @@ const OrderDetailModal = ({ order, onClose }) => {
                     )}
                     <tr className="border-t border-gray-300">
                       <td colSpan="3" className="px-4 py-2"></td>
-                      <td className="px-4 py-2 text-right text-sm font-bold text-gray-800 hidden sm:table-cell">Total:</td>
+                       <td className="px-4 py-2 text-right text-sm font-bold text-gray-800">Total:</td>
                       <td className="px-4 py-2 text-right text-base font-bold text-black">
                         {formatCurrency(finalTotal)}
                       </td>
                     </tr>
                     <tr>
                       <td colSpan="3" className="px-4 py-2"></td>
-                      <td className="px-4 py-2 text-right text-sm font-medium text-emerald-600 hidden sm:table-cell">Paid:</td>
+                       <td className="px-4 py-2 text-right text-sm font-medium text-emerald-600">Paid:</td>
                       <td className="px-4 py-2 text-right text-sm font-semibold text-emerald-600">
                         {formatCurrency(paid)}
                       </td>
                     </tr>
                     <tr>
                       <td colSpan="3" className="px-4 py-2"></td>
-                      <td className="px-4 py-2 text-right text-sm font-medium text-gray-600 hidden sm:table-cell">Change:</td>
+                       <td className="px-4 py-2 text-right text-sm font-medium text-gray-600">Change:</td>
                       <td className="px-4 py-2 text-right text-sm font-bold text-emerald-600">
                         {formatCurrency(change)}
                       </td>

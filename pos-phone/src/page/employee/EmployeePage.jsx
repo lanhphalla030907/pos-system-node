@@ -358,85 +358,52 @@ const EmployeePage = () => {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-black border-t-transparent"></div>
-              <p className="text-sm text-gray-500 mt-3">Loading employees...</p>
-            </div>
-          ) : employees.length === 0 ? (
-            <div className="text-center py-16">
-              <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <p className="text-gray-500 font-medium">No employees found</p>
-              <p className="text-sm text-gray-400 mt-1">
-                {filter.search || filter.status || filter.role_id ? "Try adjusting your filters" : "Add your first employee"}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Code</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Contact</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Salary</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+          {/* Table */}
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-black border-t-transparent"></div>
+                <p className="text-sm text-gray-500 mt-3">Loading employees...</p>
+              </div>
+            ) : employees.length === 0 ? (
+              <div className="text-center py-16">
+                <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <p className="text-gray-500 font-medium">No employees found</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {filter.search || filter.status || filter.role_id ? "Try adjusting your filters" : "Add your first employee"}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile Cards */}
+                <div className="md:hidden divide-y divide-gray-100">
                   {employees.map((item) => {
                     const status = getStatusBadge(item.status);
                     const gender = getGenderBadge(item.gender);
                     const hasUserAccount = hasAccount(item);
 
                     return (
-                      <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
-                        <td className="px-4 py-3">
+                      <div key={item.id} className="p-4 hover:bg-gray-50/80 transition-colors">
+                        <div className="flex items-start justify-between">
                           <div className="flex items-center gap-3">
                             <EmployeeImage image={item.image} name={item.name} size="sm" />
                             <div>
                               <div className="text-sm font-medium text-gray-800">{item.name}</div>
-                              <div className="text-xs text-gray-400 flex items-center gap-1">
-                                <span>{gender.label}</span>
-                                <span className="text-gray-300">•</span>
-                                {hasUserAccount ? (
-                                  <span className="text-blue-600 font-medium">@{item.username}</span>
-                                ) : (
-                                  <span className="text-amber-600">No account</span>
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${status.color}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${status.dotColor}`}></span>
+                                  {status.label}
+                                </span>
+                                <span className="text-xs text-gray-400">{gender.label}</span>
+                                {hasUserAccount && (
+                                  <span className="text-xs text-blue-600 font-medium">@{item.username}</span>
                                 )}
                               </div>
                             </div>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
-                          {item.code || "N/A"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-sm text-gray-700">{item.role_name || "N/A"}</span>
-                        </td>
-                        <td className="px-4 py-3 hidden md:table-cell">
-                          <div className="text-sm text-gray-600">{item.phone || "N/A"}</div>
-                          <div className="text-xs text-gray-400">{item.email || "N/A"}</div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
-                          <span className="text-sm font-medium text-gray-800">
-                            ${parseFloat(item.salary || 0).toFixed(2)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border ${status.color}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${status.dotColor}`}></span>
-                            {status.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center gap-1">
                             {!hasUserAccount && (
                               <button
                                 onClick={() => openAccountModal(item)}
@@ -447,14 +414,6 @@ const EmployeePage = () => {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                                 </svg>
                               </button>
-                            )}
-                            {hasUserAccount && (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                {item.username}
-                              </span>
                             )}
                             <Link
                               to={`/employees/edit/${item.id}`}
@@ -472,27 +431,8 @@ const EmployeePage = () => {
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
+                                </svg>
                             </Link>
-                            <button
-                              onClick={() => handleStatusToggle(item.id, item.status, item.name)}
-                              className={`p-1.5 rounded-lg transition-colors ${
-                                item.status === 1
-                                  ? "text-gray-400 hover:text-amber-600 hover:bg-amber-50"
-                                  : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50"
-                              }`}
-                              title={item.status === 1 ? "Deactivate" : "Activate"}
-                            >
-                              {item.status === 1 ? (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                </svg>
-                              ) : (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              )}
-                            </button>
                             <button
                               onClick={() => handleDelete(item.id, item.name)}
                               className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -500,18 +440,171 @@ const EmployeePage = () => {
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
+                                </svg>
                             </button>
                           </div>
-                        </td>
-                      </tr>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
+                          <div>
+                            <p className="text-xs text-gray-400">Role</p>
+                            <p className="text-gray-700">{item.role_name || "N/A"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400">Contact</p>
+                            <p className="text-gray-700">{item.phone || "N/A"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400">Salary</p>
+                            <p className="font-medium text-gray-800">${parseFloat(item.salary || 0).toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400">Code</p>
+                            <p className="text-gray-500">{item.code || "N/A"}</p>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Contact</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Salary</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {employees.map((item) => {
+                        const status = getStatusBadge(item.status);
+                        const gender = getGenderBadge(item.gender);
+                        const hasUserAccount = hasAccount(item);
+
+                        return (
+                          <tr key={item.id} className="hover:bg-gray-50/80 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <EmployeeImage image={item.image} name={item.name} size="sm" />
+                                <div>
+                                  <div className="text-sm font-medium text-gray-800">{item.name}</div>
+                                  <div className="text-xs text-gray-400 flex items-center gap-1">
+                                    <span>{gender.label}</span>
+                                    <span className="text-gray-300">•</span>
+                                    {hasUserAccount ? (
+                                      <span className="text-blue-600 font-medium">@{item.username}</span>
+                                    ) : (
+                                      <span className="text-amber-600">No account</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                              {item.code || "N/A"}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className="text-sm text-gray-700">{item.role_name || "N/A"}</span>
+                            </td>
+                            <td className="px-4 py-3 hidden lg:table-cell">
+                              <div className="text-sm text-gray-600">{item.phone || "N/A"}</div>
+                              <div className="text-xs text-gray-400">{item.email || "N/A"}</div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
+                              <span className="text-sm font-medium text-gray-800">
+                                ${parseFloat(item.salary || 0).toFixed(2)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border ${status.color}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${status.dotColor}`}></span>
+                                {status.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                {!hasUserAccount && (
+                                  <button
+                                    onClick={() => openAccountModal(item)}
+                                    className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                    title="Create Account"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                  </button>
+                                )}
+                                {hasUserAccount && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    {item.username}
+                                  </span>
+                                )}
+                                <Link
+                                  to={`/employees/edit/${item.id}`}
+                                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </Link>
+                                <Link
+                                  to={`/employees/${item.id}`}
+                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                  title="View Details"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                </Link>
+                                <button
+                                  onClick={() => handleStatusToggle(item.id, item.status, item.name)}
+                                  className={`p-1.5 rounded-lg transition-colors ${
+                                    item.status === 1
+                                      ? "text-gray-400 hover:text-amber-600 hover:bg-amber-50"
+                                      : "text-gray-400 hover:text-emerald-600 hover:bg-emerald-50"
+                                  }`}
+                                  title={item.status === 1 ? "Deactivate" : "Activate"}
+                                >
+                                  {item.status === 1 ? (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item.id, item.name)}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
 
         {/* Pagination */}
         {pagination && pagination.totalPages > 1 && (

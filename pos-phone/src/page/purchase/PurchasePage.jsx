@@ -301,17 +301,84 @@ const PurchasePage = () => {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
+              {/* Mobile Cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {purchases.map((item) => {
+                  const status = getStatusBadge(item.status);
+                  const StatusIcon = status.icon;
+                  const payment = getPaymentBadge(item.payment_method);
+                  const paymentStatus = getPaymentStatus(item.paid_amount, item.total_amount);
+
+                  return (
+                    <div key={item.id} className="p-4 hover:bg-gray-50/80 transition-colors">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <span className="text-sm font-medium text-black">{item.purchase_no}</span>
+                          <p className="text-xs text-gray-400 mt-0.5">{item.supplier_name || 'N/A'}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Link
+                            to={`/purchases/${item.id}`}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View Details"
+                          >
+                            <FiEye className="w-4 h-4" />
+                          </Link>
+                          <Link
+                            to={`/purchases/edit/${item.id}`}
+                            className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <FiEdit2 className="w-4 h-4" />
+                          </Link>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium border ${status.color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {status.label}
+                        </span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-medium border ${paymentStatus.color}`}>
+                          {paymentStatus.label}
+                        </span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-medium border ${payment.color}`}>
+                          {payment.label}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs text-gray-400">Total</p>
+                          <p className="font-bold text-gray-800">{formatCurrency(item.total_amount)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400">Paid</p>
+                          <p className="text-emerald-600 font-medium">{formatCurrency(item.paid_amount)}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs text-gray-400">Date</p>
+                          <p className="text-xs text-gray-500 flex items-center gap-1">
+                            <FiClock className="w-3 h-3 text-gray-400" />
+                            {formatDate(item.create_at)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase No</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Supplier</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Payment</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Payment</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Method</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -329,7 +396,7 @@ const PurchasePage = () => {
                               {item.purchase_no}
                             </span>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
+                          <td className="px-4 py-3 whitespace-nowrap">
                             <span className="text-sm text-gray-700">
                               {item.supplier_name || 'N/A'}
                             </span>
@@ -339,7 +406,7 @@ const PurchasePage = () => {
                               {formatCurrency(item.total_amount)}
                             </span>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap hidden md:table-cell">
+                          <td className="px-4 py-3 whitespace-nowrap hidden lg:table-cell">
                             <div>
                               <span className="text-sm text-emerald-600 font-medium">
                                 {formatCurrency(item.paid_amount)}
@@ -365,7 +432,7 @@ const PurchasePage = () => {
                               {payment.label}
                             </span>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
+                          <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-1.5 text-sm text-gray-500">
                               <FiClock className="w-3.5 h-3.5 text-gray-400" />
                               <span>{formatDate(item.create_at)}</span>

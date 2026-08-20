@@ -31,7 +31,17 @@ exports.getProduct = asyncHandler(async (req, res) => {
 
 exports.createProduct = asyncHandler(async (req, res) => {
   const data = {
-    ...req.body,
+    category_id: req.body.category_id,
+    barcode: req.body.barcode,
+    name: req.body.name,
+    brand: req.body.brand,
+    description: req.body.description,
+    qty: req.body.qty,
+    min_stock: req.body.min_stock,
+    price: req.body.price,
+    cost_price: req.body.cost_price,
+    discount: req.body.discount,
+    status: req.body.status,
     image: req.file ? req.file.filename : null,
   };
   const id = await productService.createProduct(data, req.current_name);
@@ -43,7 +53,17 @@ exports.createProduct = asyncHandler(async (req, res) => {
 
 exports.updateProduct = asyncHandler(async (req, res) => {
   const data = {
-    ...req.body,
+    category_id: req.body.category_id,
+    barcode: req.body.barcode,
+    name: req.body.name,
+    brand: req.body.brand,
+    description: req.body.description,
+    qty: req.body.qty,
+    min_stock: req.body.min_stock,
+    price: req.body.price,
+    cost_price: req.body.cost_price,
+    discount: req.body.discount,
+    status: req.body.status,
   };
   if (req.file) {
     data.image = req.file.filename;

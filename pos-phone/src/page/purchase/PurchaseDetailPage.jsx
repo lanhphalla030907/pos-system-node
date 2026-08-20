@@ -68,15 +68,15 @@ const PurchaseDetailPage = () => {
   const status = getStatusBadge(purchase.status);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Purchase Details</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Purchase Details</h1>
             <p className="text-sm text-gray-500 mt-1">View and manage purchase information</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Link
               to="/purchases"
               className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
@@ -183,7 +183,39 @@ const PurchaseDetailPage = () => {
             <div className="mt-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Purchase Items</h3>
               <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <table className="w-full">
+                {/* Mobile Cards */}
+                <div className="md:hidden divide-y divide-gray-200">
+                  {purchase.items?.map((item) => (
+                    <div key={item.id} className="p-3 hover:bg-gray-50">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="text-sm font-medium">{item.product_name}</p>
+                          {item.barcode && (
+                            <p className="text-xs text-gray-400">{item.barcode}</p>
+                          )}
+                        </div>
+                        <span className="text-sm font-semibold">{formatCurrency(item.amount)}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <p className="text-gray-400">Qty</p>
+                          <p className="font-medium">{item.qty}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">Cost</p>
+                          <p>{formatCurrency(item.cost)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">Retail</p>
+                          <p>{formatCurrency(item.retail_price)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table */}
+                <table className="w-full hidden md:table">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
@@ -217,29 +249,6 @@ const PurchaseDetailPage = () => {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 border-t border-gray-200">
-                    <tr>
-                      <td colSpan="4" className="px-4 py-2"></td>
-                      <td className="px-4 py-2 text-right text-sm font-medium">Subtotal:</td>
-                      <td className="px-4 py-2 text-right text-sm font-semibold">
-                        {formatCurrency(purchase.total_amount - (purchase.shipping_cost || 0))}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td colSpan="4" className="px-4 py-2"></td>
-                      <td className="px-4 py-2 text-right text-sm font-medium">Shipping:</td>
-                      <td className="px-4 py-2 text-right text-sm font-semibold">
-                        {formatCurrency(purchase.shipping_cost)}
-                      </td>
-                    </tr>
-                    <tr className="border-t border-gray-300">
-                      <td colSpan="4" className="px-4 py-2"></td>
-                      <td className="px-4 py-2 text-right text-sm font-bold">Total:</td>
-                      <td className="px-4 py-2 text-right text-sm font-bold text-blue-600">
-                        {formatCurrency(purchase.total_amount)}
-                      </td>
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
             </div>

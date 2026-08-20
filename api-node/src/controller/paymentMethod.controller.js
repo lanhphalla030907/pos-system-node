@@ -37,7 +37,9 @@ exports.getById = async (req, res) => {
 exports.create = async (req, res) => {
   try {
     const data = await paymentMethodService.create({
-      ...req.body,
+      name: req.body.name,
+      type: req.body.type,
+      is_active: req.body.is_active,
       create_by: req.current_id,
     });
 
@@ -58,7 +60,11 @@ exports.update = async (req, res) => {
   try {
     const data = await paymentMethodService.update(
       req.params.id,
-      req.body
+      {
+        name: req.body.name,
+        type: req.body.type,
+        is_active: req.body.is_active,
+      }
     );
 
     res.json({

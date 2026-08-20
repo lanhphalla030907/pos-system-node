@@ -541,83 +541,141 @@ const PurchaseReportPage = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {filter.type === 'daily' ? 'Date' : 'Month'}
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Purchases
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Paid
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Remaining
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {report.map((item, index) => {
-                  const label = filter.type === 'daily' 
-                    ? formatDate(item.date) 
-                    : item.month;
-                  
-                  return (
-                    <tr key={index} className="hover:bg-gray-50/80 transition-colors">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-800">
-                          {label}
-                        </span>
+            {/* Mobile Cards */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {report.map((item, index) => {
+                const label = filter.type === 'daily'
+                  ? formatDate(item.date)
+                  : item.month;
+
+                return (
+                  <div key={index} className="p-4 hover:bg-gray-50/80 transition-colors">
+                    <p className="text-sm font-medium text-gray-800 mb-2">{label}</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-400">Purchases</p>
+                        <p className="font-medium text-gray-600">{item.total_purchase || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Amount</p>
+                        <p className="font-medium text-gray-800">{formatCurrency(item.total_amount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Paid</p>
+                        <p className="font-medium text-emerald-600">{formatCurrency(item.total_paid)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Remaining</p>
+                        <p className="font-medium text-red-600">{formatCurrency(item.total_remaining)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {report.length > 0 && (
+                <div className="p-4 bg-gray-50 border-t border-gray-200">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-xs text-gray-400">Total Purchases</p>
+                      <p className="font-bold text-gray-800">{totals.total_purchase}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Total Amount</p>
+                      <p className="font-bold text-gray-800">{formatCurrency(totals.total_amount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Total Paid</p>
+                      <p className="font-bold text-emerald-600">{formatCurrency(totals.total_paid)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Total Remaining</p>
+                      <p className="font-bold text-red-600">{formatCurrency(totals.total_remaining)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden md:block">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {filter.type === 'daily' ? 'Date' : 'Month'}
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Purchases
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Paid
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Remaining
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {report.map((item, index) => {
+                    const label = filter.type === 'daily'
+                      ? formatDate(item.date)
+                      : item.month;
+
+                    return (
+                      <tr key={index} className="hover:bg-gray-50/80 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-medium text-gray-800">
+                            {label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <span className="text-sm text-gray-600 font-medium">
+                            {item.total_purchase || 0}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <span className="text-sm font-medium text-gray-800">
+                            {formatCurrency(item.total_amount)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <span className="text-sm font-medium text-emerald-600">
+                            {formatCurrency(item.total_paid)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <span className="text-sm font-medium text-red-600">
+                            {formatCurrency(item.total_remaining)}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                {report.length > 0 && (
+                  <tfoot className="bg-gray-50 border-t border-gray-200">
+                    <tr>
+                      <td className="px-4 py-3 text-sm font-bold text-gray-800">Total</td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
+                        {totals.total_purchase}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <span className="text-sm text-gray-600 font-medium">
-                          {item.total_purchase || 0}
-                        </span>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
+                        {formatCurrency(totals.total_amount)}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <span className="text-sm font-medium text-gray-800">
-                          {formatCurrency(item.total_amount)}
-                        </span>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-emerald-600">
+                        {formatCurrency(totals.total_paid)}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <span className="text-sm font-medium text-emerald-600">
-                          {formatCurrency(item.total_paid)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <span className="text-sm font-medium text-red-600">
-                          {formatCurrency(item.total_remaining)}
-                        </span>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-red-600">
+                        {formatCurrency(totals.total_remaining)}
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-              {report.length > 0 && (
-                <tfoot className="bg-gray-50 border-t border-gray-200">
-                  <tr>
-                    <td className="px-4 py-3 text-sm font-bold text-gray-800">Total</td>
-                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
-                      {totals.total_purchase}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-bold text-gray-800">
-                      {formatCurrency(totals.total_amount)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-bold text-emerald-600">
-                      {formatCurrency(totals.total_paid)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-bold text-red-600">
-                      {formatCurrency(totals.total_remaining)}
-                    </td>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
+                  </tfoot>
+                )}
+              </table>
+            </div>
           </div>
         )}
       </div>

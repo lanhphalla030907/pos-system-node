@@ -16,6 +16,13 @@ export const NotificationProvider = ({ children }) => {
         setUnreadCount(res.data?.count || 0);
       }
     } catch (error) {
+      if (error?.response?.status === 401) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        return;
+      }
       console.error("Failed to fetch unread count:", error);
     }
   }, []);

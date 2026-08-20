@@ -175,6 +175,7 @@ const User = () => {
       key: "id",
       title: "ID",
       width: "60px",
+      mobile: false,
       render: (row, index) => (
         <span className="text-xs text-gray-400 font-mono">
           #{String(index + 1).padStart(2, "0")}
@@ -184,6 +185,7 @@ const User = () => {
     {
       key: "user",
       title: "User",
+      mobilePrimary: true,
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-700 font-medium text-sm flex-shrink-0">
@@ -225,6 +227,7 @@ const User = () => {
       key: "create_by",
       title: "Create By",
       width: "140px",
+      mobile: false,
       render: (row) => (
         <span className="text-sm text-gray-600">
           {row.create_by_name || "System"}
@@ -235,6 +238,7 @@ const User = () => {
       key: "create_at",
       title: "Created At",
       width: "170px",
+      mobile: false,
       render: (row) => (
         <div className="flex items-center gap-1.5 text-sm text-gray-500">
           <FiClock className="w-3.5 h-3.5 text-gray-400" />
@@ -246,6 +250,7 @@ const User = () => {
       key: "update_at",
       title: "Update At",
       width: "170px",
+      mobile: false,
       render: (row) => (
         <div className="flex items-center gap-1.5 text-sm text-gray-500">
           <FiClock className="w-3.5 h-3.5 text-gray-400" />

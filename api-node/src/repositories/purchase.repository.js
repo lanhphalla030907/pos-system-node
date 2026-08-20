@@ -384,27 +384,25 @@ exports.getReport = async (connection, filters) => {
     where += ` AND create_at <= ?`;
     params.push(`${to} 23:59:59`);
   }
-  let groupBy;
-  let selectDate;
-  if (type === "daily") {
-    selectDate = `
-            DATE(create_at) AS date
-        `;
-    groupBy = `
-            DATE(create_at)
-        `;
-  }
-  else if (type === "monthly") {
-    selectDate = `
-            DATE_FORMAT(create_at, '%Y-%m') AS month
-        `;
 
-    groupBy = `
-            DATE_FORMAT(create_at, '%Y-%m')
-        `;
-  } else {
+  const allowedTypes = {
+    daily: {
+      selectDate: `DATE(create_at) AS date`,
+      groupBy: `DATE(create_at)`,
+    },
+    monthly: {
+      selectDate: `DATE_FORMAT(create_at, '%Y-%m') AS month`,
+      groupBy: `DATE_FORMAT(create_at, '%Y-%m')`,
+    },
+  };
+
+  const config = allowedTypes[type];
+  if (!config) {
     throw new Error("Report type must be daily or monthly");
   }
+
+  const { selectDate, groupBy } = config;
+
   const sql = `
         SELECT
             ${selectDate},
