@@ -57,7 +57,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use(errorHandler);
 
-const PORT = 8081;
+const PORT = 8080;
 
 app.listen(PORT, () => {
   console.log("http://localhost:" + PORT);

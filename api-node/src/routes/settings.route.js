@@ -9,11 +9,11 @@ const upload = require("../middleware/upload.middleware");
 
 module.exports = (app) => {
   app.get("/api/settings", validate_token(), getAll);
-  app.put("/api/settings", validate_token(), checkPermission("settings.update"), update);
+  app.put("/api/settings", validate_token(),update);
   app.post(
     "/api/settings/upload-logo",
     validate_token(),
-    checkPermission("settings.update"),
+   
     upload("settings").single("image"),
     uploadLogo,
   );
