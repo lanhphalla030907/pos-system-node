@@ -16,7 +16,7 @@ This is a **monorepo** containing three top-level parts:
 
 | Layer   | Technology |
 | ------- | ---------- |
-| Backend | Node.js, Express 5, MySQL (`mysql2` pool, raw SQL), JWT + bcrypt, Multer, node-cron, node-telegram-bot-api |
+| Backend | Node.js, Express 5, MySQL (`mysql2` pool, raw SQL), JWT + bcrypt, Multer (memory) + Cloudinary, node-cron, node-telegram-bot-api |
 | Frontend | React 19, Vite 8, Tailwind CSS 4, React Router 6, axios, Chart.js, react-to-print |
 | Notifications | Telegram Bot API + in-app notification center |
 | Security | Helmet, CORS allowlist, rate limiting, RBAC middleware (`checkPermission`) |
@@ -78,13 +78,28 @@ Create a MySQL database (default name `node-backend`) and run the SQL scripts in
 6. `order_payment_migration.sql`
 7. `order_tax_migration.sql`
 
+For an existing database that already has product/employee images, also apply
+the forward-only Cloudinary migration:
+
+```bash
+mysql -u <user> -p <database> < database/migrations/20261026_cloudinary_image_storage.sql
+```
+
 ### 3. Configure the backend
 
 ```bash
 cd api-node
 cp .env.example .env
-# edit .env:  JWT_SECRET, DB_* credentials, CORS_ORIGIN, TELEGRAM_* (optional)
+# edit .env: JWT_SECRET, DB_* credentials, CORS_ORIGIN,
+#            CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET,
+#            TELEGRAM_* (optional)
 ```
+
+`.env` is gitignored. Set the same variables in the hosting provider's secret
+manager; never expose `CLOUDINARY_API_SECRET` to the Vite frontend. In
+production set `CORS_ORIGIN` to the deployed frontend origin(s), comma-separated.
+See [API README → Image Storage](./api-node/README.md#image-storage) for the
+migration, legacy-local-image behavior, verification steps and orphan cleanup.
 
 Start the API:
 
@@ -108,6 +123,7 @@ The frontend expects the API at `http://localhost:8080` (hardcoded in `pos-phone
 | ---------- | ------- | ----------- |
 | `api-node/` | `node index.js` | Start the API on port 8080 |
 | `api-node/` | `npm run dev` | Start with nodemon (requires global nodemon) |
+| `api-node/` | `npm test` | Run backend tests (`node:test`) |
 | `pos-phone/` | `npm run dev` | Vite dev server |
 | `pos-phone/` | `npm run build` | Production build → `dist/` |
 | `pos-phone/` | `npm run lint` | Run ESLint |
@@ -117,6 +133,7 @@ The frontend expects the API at `http://localhost:8080` (hardcoded in `pos-phone
 - **POS checkout** — product grid → cart → split payments across multiple methods → auto-printed receipts
 - **Customer membership** — spend-based tier promotions (regular → member → VIP) and per-customer discounts
 - **Inventory** — purchases restock products, low-stock thresholds, stock history/movement/value reports
+- **Image storage** — product, employee and store-logo uploads go to Cloudinary; legacy local images remain served from `/uploads`
 - **RBAC** — roles, permission codes (`product.view`, `order.create`, ...), role→permission assignment
 - **Dashboards** — KPIs, sales/profit charts (daily/weekly/monthly/yearly), payment summaries
 - **Dual currency** — USD ($) / KHR (៛) display with configurable exchange rate

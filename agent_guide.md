@@ -72,7 +72,7 @@ Errors: `{ "success": false, "message": "..." }` (plus `stack` in development). 
 - `checkPermission("<code>")` (`src/middleware/checkPermission.js`) is an optional extra middleware that looks up the user's permission codes via `rolePermissionRepository.getUserPermissions` and returns `403` if absent. Used only on a few routes (e.g., `product.delete`).
 
 ### Key middleware (all in `src/middleware/`)
-- `upload.middleware.js` — `upload(folder)` multer factory; only JPG/JPEG/PNG, max 3 MB, stored under `api-node/uploads/<folder>/`, filename `{field}-{timestamp}-{rand}{ext}`.
+- `upload.middleware.js` — `upload(folder)` multer factory; only JPG/JPEG/PNG, max 3 MB. Files use memory storage and are validated by signature before `services/storage/image-storage.service.js` uploads them to Cloudinary. Client filenames are ignored; Cloudinary public IDs are server-generated UUIDs.
 - `rateLimit.js` — exports `loginLimiter` and `apiLimiter`.
 - `errorHandler.js` — central error middleware.
 - `checkPermission.js` and `asyncHandler.js` as described above.
@@ -115,8 +115,8 @@ Login/Register live in `src/page/auth/`. After a successful login the token and 
 2. **Parameterize all SQL.** Use `mysql2` positional (`?`) or named (`:name`) placeholders. Never concatenate user input into SQL strings.
 3. **Use the response envelope.** Every backend success response should be `{ success: true, ... }`; every error `{ success: false, message }`. Wrap async controllers with `asyncHandler` and throw `AppError` for expected failures so the central error handler takes over.
 4. **Auth on new endpoints.** Protect new API routes with `validate_token()`; use `checkPermission("<code>")` when the permission list already covers the action. Remember permission codes are seeded in `database/role permissions.sql` — check there before inventing new codes.
-5. **File uploads.** Reuse `upload("<folder>")` from `upload.middleware.js`; remember to clean up old files in the service layer (see `product.service.js` for the pattern).
-6. **No TypeScript, no tests.** Verify changes with the frontend `lint` (`npm run lint` in `pos-phone/`), and by running both dev servers manually. There is no backend test runner.
+5. **File uploads.** Reuse `upload("<folder>")` from `upload.middleware.js`; pass `req.file` to the service, which owns Cloudinary upload/persistence/cleanup via `src/services/storage/image-storage.service.js`. Never delete an old asset before the new DB reference is saved.
+6. **No TypeScript.** Backend tests use the built-in `node:test` runner (`npm test` in `api-node/`); frontend checks use `npm run lint` in `pos-phone/`.
 7. **Don't add comments to code unless asked**, and keep style consistent with surrounding files (CommonJS on the backend, ES modules on the frontend).
 8. **Beware of inherited typos** — `prouduct/`, `stcok`, `rolePemission`, `suppiler`. When fixing them, update every importer/reference and verify with a build/lint.
 9. **Secrets:** the JWT secret and Telegram token are already committed; don't introduce new hardcoded secrets and don't log existing ones.
