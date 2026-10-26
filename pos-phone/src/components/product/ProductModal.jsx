@@ -91,7 +91,9 @@ const ProductModal = ({
 
       if (selectedProduct.image) {
         setImagePreview(
-          `${Config.base_url}uploads/products/${selectedProduct.image}`,
+          selectedProduct.image.startsWith("http")
+            ? selectedProduct.image
+            : `${Config.base_url2}uploads/products/${selectedProduct.image}`,
         );
       }
     }
