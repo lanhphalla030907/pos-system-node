@@ -55,6 +55,13 @@ require("./src/routes/notification.route")(app);
 require("./src/jobs/stockAlert.job");
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+const cloudinaryService = require("./src/services/storage/cloudinary.service");
+if (!cloudinaryService.isConfigured()) {
+  console.warn(
+    "[image-storage] Cloudinary is not configured. Existing local images remain available, but new uploads will fail until CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET are set.",
+  );
+}
+
 app.use(errorHandler);
 
 const PORT = 8080;

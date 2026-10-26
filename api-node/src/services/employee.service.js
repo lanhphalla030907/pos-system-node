@@ -1,4 +1,5 @@
 const employeeRepository = require("../repositories/employee.repository");
+const imageStorage = require("./storage/image-storage.service");
 const { db } = require("../util/helper");
 const authService = require("./auth.service");
 // Generate Employee Code
@@ -46,7 +47,7 @@ exports.getById = async (id) => {
 };
 
 // Create
-exports.create = async (data) => {
+exports.create = async (data, file) => {
   if (!data.name) {
     throw new Error("Employee name is required");
   }
@@ -70,7 +71,32 @@ exports.create = async (data) => {
     data.user_id = null;
   }
 
-  const id = await employeeRepository.create(data);
+  let uploadedImage = null;
+  if (file) {
+    uploadedImage = await imageStorage.uploadImage(file, "employee");
+    data.image = uploadedImage.image;
+    data.image_public_id = uploadedImage.publicId;
+  } else {
+    data.image = null;
+    data.image_public_id = null;
+  }
+
+  let id;
+  try {
+    id = await employeeRepository.create(data);
+  } catch (error) {
+    if (uploadedImage) {
+      await imageStorage.safeDeleteImage(
+        {
+          image: uploadedImage.image,
+          publicId: uploadedImage.publicId,
+          folderKey: "employee",
+        },
+        "employee create rollback",
+      );
+    }
+    throw error;
+  }
 
   return {
     id,
@@ -80,7 +106,7 @@ exports.create = async (data) => {
 };
 
 // Update
-exports.update = async (id, data) => {
+exports.update = async (id, data, file) => {
   const employee = await employeeRepository.getById(id);
 
   if (!employee) {
@@ -95,7 +121,43 @@ exports.update = async (id, data) => {
     data.user_id = null;
   }
 
-  await employeeRepository.update(id, data);
+  let uploadedImage = null;
+  if (file) {
+    uploadedImage = await imageStorage.uploadImage(file, "employee");
+    data.image = uploadedImage.image;
+    data.image_public_id = uploadedImage.publicId;
+  } else {
+    // No new upload: preserve the existing image reference.
+    data.image = employee.image;
+    data.image_public_id = employee.image_public_id || null;
+  }
+
+  try {
+    await employeeRepository.update(id, data);
+  } catch (error) {
+    if (uploadedImage) {
+      await imageStorage.safeDeleteImage(
+        {
+          image: uploadedImage.image,
+          publicId: uploadedImage.publicId,
+          folderKey: "employee",
+        },
+        "employee update rollback",
+      );
+    }
+    throw error;
+  }
+
+  if (uploadedImage) {
+    await imageStorage.safeDeleteImage(
+      {
+        image: employee.image,
+        publicId: employee.image_public_id || null,
+        folderKey: "employee",
+      },
+      `employee ${id} image replacement`,
+    );
+  }
 
   return {
     message: "Employee updated successfully",
@@ -110,7 +172,17 @@ exports.remove = async (id) => {
     throw new Error("Employee not found");
   }
 
+  // Delete the database row first. If that fails, the image stays intact.
   await employeeRepository.remove(id);
+
+  await imageStorage.safeDeleteImage(
+    {
+      image: employee.image,
+      publicId: employee.image_public_id || null,
+      folderKey: "employee",
+    },
+    `employee ${id} deletion`,
+  );
 
   return {
     message: "Employee deleted successfully",

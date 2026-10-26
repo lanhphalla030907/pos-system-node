@@ -1,6 +1,5 @@
-const fs = require("fs");
-const path = require("path");
 const productRepository = require("../repositories/product.repository");
+const imageStorage = require("./storage/image-storage.service");
 const AppError = require("../util/AppError");
 
 exports.getProducts = async (filter) => {
@@ -15,20 +14,15 @@ exports.getProductById = async (id) => {
   return product;
 };
 
-exports.createProduct = async (data, user) => {
+exports.createProduct = async (data, user, file) => {
   const {
     category_id,
-    barcode,
     name,
-    brand,
-    description,
     qty,
     min_stock,
     price,
     cost_price,
     discount,
-    status,
-    image,
   } = data;
   // RQUIRED
   if (!name || !name.trim()) {
@@ -67,40 +61,87 @@ exports.createProduct = async (data, user) => {
     throw new AppError("Cost price cannot be greater than selling price", 400);
   }
   // CREATE
-  return await productRepository.create(
-    {
-      ...data,
-      qty: productQty,
-      min_stock: minimumStock,
-      price: productPrice,
-      cost_price: productCostPrice,
-      discount: productDiscount,
-    },
-    user,
-  );
+  let uploadedImage = null;
+  if (file) {
+    uploadedImage = await imageStorage.uploadImage(file, "products");
+  }
+
+  try {
+    return await productRepository.create(
+      {
+        ...data,
+        image: uploadedImage ? uploadedImage.image : null,
+        image_public_id: uploadedImage ? uploadedImage.publicId : null,
+        qty: productQty,
+        min_stock: minimumStock,
+        price: productPrice,
+        cost_price: productCostPrice,
+        discount: productDiscount,
+      },
+      user,
+    );
+  } catch (error) {
+    if (uploadedImage) {
+      await imageStorage.safeDeleteImage(
+        {
+          image: uploadedImage.image,
+          publicId: uploadedImage.publicId,
+          folderKey: "products",
+        },
+        "product create rollback",
+      );
+    }
+    throw error;
+  }
 };
 
-exports.updateProduct = async (id, data) => {
+exports.updateProduct = async (id, data, file) => {
   const existProduct = await productRepository.getById(id);
   if (!existProduct) {
     throw new AppError("Product not found", 404);
   }
 
-  // if have new upload it will delete the old photo
-  if (data.image && existProduct.image) {
-    const oldImagePath = path.join(
-      __dirname,
-      `../../uploads/products/${existProduct.image}`,
-    );
-    if (fs.existsSync(oldImagePath)) {
-      fs.unlinkSync(oldImagePath);
-    }
-  } else if (!data.image) {
-    // if no upload it will use the old photo
+  let uploadedImage = null;
+  if (file) {
+    uploadedImage = await imageStorage.uploadImage(file, "products");
+    data.image = uploadedImage.image;
+    data.image_public_id = uploadedImage.publicId;
+  } else {
+    // No new upload: keep the existing image reference untouched.
     data.image = existProduct.image;
+    data.image_public_id = existProduct.image_public_id || null;
   }
 
-  return await productRepository.update(id, data);
+  let affectedRows;
+  try {
+    affectedRows = await productRepository.update(id, data);
+  } catch (error) {
+    if (uploadedImage) {
+      await imageStorage.safeDeleteImage(
+        {
+          image: uploadedImage.image,
+          publicId: uploadedImage.publicId,
+          folderKey: "products",
+        },
+        "product update rollback",
+      );
+    }
+    throw error;
+  }
+
+  // The new reference is committed before the previous asset is removed.
+  if (uploadedImage) {
+    await imageStorage.safeDeleteImage(
+      {
+        image: existProduct.image,
+        publicId: existProduct.image_public_id || null,
+        folderKey: "products",
+      },
+      `product ${id} image replacement`,
+    );
+  }
+
+  return affectedRows;
 };
 exports.generateBarcode = async () => {
   const lastNumber = await productRepository.getLastBarcodeNumber();
@@ -114,17 +155,18 @@ exports.deleteProduct = async (id) => {
     throw new AppError("Product not found", 404);
   }
 
-  // delete the photo after the product has delete
-  if (product.image) {
-    const imagePath = path.join(
-      __dirname,
-      `../../uploads/products/${product.image}`,
-    );
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
-    }
-  }
+  // Delete the database row first. If that fails, the image stays intact.
   await productRepository.remove(id);
+
+  await imageStorage.safeDeleteImage(
+    {
+      image: product.image,
+      publicId: product.image_public_id || null,
+      folderKey: "products",
+    },
+    `product ${id} deletion`,
+  );
+
   return true;
 };
 exports.getTopSale = async (query) => {

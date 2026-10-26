@@ -112,6 +112,7 @@ exports.create = async (data, user) => {
     discount,
     status,
     image,
+    image_public_id,
     create_by,
   } = data;
   const sql = `
@@ -129,6 +130,7 @@ exports.create = async (data, user) => {
       discount,
       status,
       image,
+      image_public_id,
       create_by
     )
     VALUES
@@ -145,6 +147,7 @@ exports.create = async (data, user) => {
       :discount,
       :status,
       :image,
+      :image_public_id,
       :create_by
     )
   `;
@@ -162,6 +165,7 @@ exports.create = async (data, user) => {
     discount,
     status,
     image,
+    image_public_id,
     create_by: user,
   });
 
@@ -182,7 +186,8 @@ exports.update = async (id, data) => {
     cost_price=?,
     discount=?,
     status=?,
-    image=?
+    image=?,
+    image_public_id=?
     WHERE id=?
     `;
   const [result] = await db.query(sql, [
@@ -198,6 +203,7 @@ exports.update = async (id, data) => {
     data.discount,
     data.status,
     data.image,
+    data.image_public_id || null,
     id,
   ]);
   return result.affectedRows;

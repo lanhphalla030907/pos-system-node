@@ -1,21 +1,10 @@
 const multer = require("multer");
-const path = require("path");
 const AppError = require("../util/AppError");
-const MAX_FILE_SIZE = 3 * 1024 * 1024; 
+const { validateImageFile } = require("../services/storage/image-validation.service");
+
+const MAX_FILE_SIZE = 3 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
-// Create storage dynamically
-const storage = (folder) => {
-  return multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, `uploads/${folder}`);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const extension = path.extname(file.originalname);
-      cb(null, `${file.fieldname}-${uniqueSuffix}${extension}`);
-    },
-  });
-}
+
 const fileFilter = (req, file, cb) => {
   if (!ALLOWED_FILE_TYPES.includes(file.mimetype)) {
     return cb(
@@ -25,25 +14,42 @@ const fileFilter = (req, file, cb) => {
   }
   cb(null, true);
 };
-// Reusable upload function
-const upload = (folder) => {
-  return multer({
-    storage: storage(folder),
+
+const createMulter = () =>
+  multer({
+    storage: multer.memoryStorage(),
     limits: {
       fileSize: MAX_FILE_SIZE,
+      files: 1,
     },
     fileFilter,
   });
+
+// Validates the real file signature before any service can upload it. Files are
+// kept in memory so a rejected upload never touches the server filesystem.
+const validateUploadedImage = (folder) => (req, res, next) => {
+  if (!req.file) {
+    return next();
+  }
+
+  try {
+    validateImageFile(req.file);
+    req.uploadFolder = folder;
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
+
+const upload = (folder) => {
+  return {
+    single: (fieldName) => [
+      createMulter().single(fieldName),
+      validateUploadedImage(folder),
+    ],
+  };
+};
+
 module.exports = upload;
-
-
-
-
-// Usage
-// const upload = require("../middleware/upload.middleware");
-// router.post(
-//     "/",
-//     upload("products").single("image"),
-//     productController.createProduct
-// );
+module.exports.MAX_FILE_SIZE = MAX_FILE_SIZE;
+module.exports.ALLOWED_FILE_TYPES = ALLOWED_FILE_TYPES;

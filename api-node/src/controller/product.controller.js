@@ -42,9 +42,12 @@ exports.createProduct = asyncHandler(async (req, res) => {
     cost_price: req.body.cost_price,
     discount: req.body.discount,
     status: req.body.status,
-    image: req.file ? req.file.filename : null,
   };
-  const id = await productService.createProduct(data, req.current_name);
+  const id = await productService.createProduct(
+    data,
+    req.current_name,
+    req.file,
+  );
   res.status(201).json({
     success: true,
     id,
@@ -65,10 +68,7 @@ exports.updateProduct = asyncHandler(async (req, res) => {
     discount: req.body.discount,
     status: req.body.status,
   };
-  if (req.file) {
-    data.image = req.file.filename;
-  }
-  await productService.updateProduct(req.params.id, data);
+  await productService.updateProduct(req.params.id, data, req.file);
   res.json({
     success: true,
     message: "Product updated successfully",

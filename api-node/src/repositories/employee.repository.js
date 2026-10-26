@@ -16,6 +16,7 @@ exports.getAll = async (query) => {
     e.hire_date,
     e.status,
     e.image,
+    e.image_public_id,
     u.username,
     e.create_at,
     cb.name AS create_by_name
@@ -113,11 +114,12 @@ exports.create = async (data) => {
       hire_date,
       status,
       image,
+      image_public_id,
       user_id,
       create_by
     )
     VALUES
-    (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `,
     [
       data.code,
@@ -132,6 +134,7 @@ exports.create = async (data) => {
       data.hire_date,
       data.status,
       data.image,
+      data.image_public_id || null,
       data.user_id || null,
       data.create_by,
     ],
@@ -158,6 +161,7 @@ exports.update = async (id, data) => {
       hire_date=?,
       status=?,
       image=?,
+      image_public_id=?,
       user_id=?
     WHERE id=?
     `,
@@ -173,6 +177,7 @@ exports.update = async (id, data) => {
       data.hire_date,
       data.status,
       data.image,
+      data.image_public_id || null,
       data.user_id || null,
       id,
     ],

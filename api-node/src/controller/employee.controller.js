@@ -56,11 +56,10 @@ exports.create = async (req, res) => {
       salary: req.body.salary,
       hire_date: req.body.hire_date,
       status: req.body.status,
-      image: req.file ? req.file.filename : null,
       create_by: req.current_id,
     };
 
-    const result = await employeeService.create(data);
+    const result = await employeeService.create(data, req.file);
 
     res.status(201).json({
       success: true,
@@ -68,7 +67,7 @@ exports.create = async (req, res) => {
       data: result,
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.statusCode || 400).json({
       success: false,
       message: err.message,
     });
@@ -91,18 +90,18 @@ exports.update = async (req, res) => {
       status: req.body.status,
     };
 
-    if (req.file) {
-      data.image = req.file.filename;
-    }
-
-    const result = await employeeService.update(req.params.id, data);
+    const result = await employeeService.update(
+      req.params.id,
+      data,
+      req.file,
+    );
 
     res.json({
       success: true,
       message: result.message,
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.statusCode || 400).json({
       success: false,
       message: err.message,
     });
@@ -120,7 +119,7 @@ exports.remove = async (req, res) => {
       message: data.message,
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.statusCode || 400).json({
       success: false,
 
       message: err.message,
@@ -164,7 +163,7 @@ exports.createAccount = async (req, res) => {
       message: result.message,
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.statusCode || 400).json({
       success: false,
       message: err.message,
     });

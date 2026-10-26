@@ -29,20 +29,21 @@ exports.getAllKeys = async () => {
 exports.updateBatch = async (entries, updatedBy) => {
   if (!entries.length) return 0;
 
-  let affected = 0;
+  const placeholders = entries.map(() => "(?, ?, ?)").join(", ");
+  const params = entries.flatMap(({ key, value }) => [
+    key,
+    value,
+    updatedBy || null,
+  ]);
 
-  for (const { key, value } of entries) {
-    const sql = `
-      INSERT INTO settings (setting_key, setting_value, updated_by)
-      VALUES (?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        setting_value = VALUES(setting_value),
-        updated_by = VALUES(updated_by)
-    `;
+  const sql = `
+    INSERT INTO settings (setting_key, setting_value, updated_by)
+    VALUES ${placeholders}
+    ON DUPLICATE KEY UPDATE
+      setting_value = VALUES(setting_value),
+      updated_by = VALUES(updated_by)
+  `;
 
-    const [result] = await db.query(sql, [key, value, updatedBy || null]);
-    affected += result.affectedRows;
-  }
-
-  return affected;
+  const [result] = await db.query(sql, params);
+  return result.affectedRows;
 };

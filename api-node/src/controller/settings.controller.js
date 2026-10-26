@@ -27,7 +27,7 @@ exports.update = async (req, res) => {
       data,
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.statusCode || 400).json({
       success: false,
       message: err.message,
     });
@@ -44,7 +44,7 @@ exports.uploadLogo = async (req, res) => {
       data: { store_logo: filename },
     });
   } catch (err) {
-    res.status(400).json({
+    res.status(err.statusCode || 400).json({
       success: false,
       message: err.message,
     });
