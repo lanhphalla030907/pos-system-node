@@ -23,11 +23,18 @@ const StockHistoryPage = () => {
 
   // Handle filter changes
   const handleFilterChange = (key, value) => {
-    setFilter(prev => ({
-      ...prev,
-      [key]: value,
-      page: key === 'page' ? value : (key === 'limit' || key === 'search' ? 1 : prev.page),
-    }));
+    setFilter(prev => {
+      // If only page changed, keep everything else
+      if (key === 'page') {
+        return { ...prev, page: value };
+      }
+      // Any other filter change resets to page 1
+      return {
+        ...prev,
+        [key]: value,
+        page: 1,
+      };
+    });
   };
 
   // Clear filters
@@ -74,7 +81,7 @@ const StockHistoryPage = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -166,14 +173,14 @@ const StockHistoryPage = () => {
                   const type = getTypeBadge(item.movement_type);
                   return (
                     <div key={item.detail_id} className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{item.product_name}</p>
+                      <div className="flex items-start justify-between mb-2 gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{item.product_name}</p>
                           {item.barcode && (
-                            <p className="text-xs text-gray-400">{item.barcode}</p>
+                            <p className="text-xs text-gray-400 truncate">{item.barcode}</p>
                           )}
                         </div>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${type.color}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${type.color}`}>
                           {type.label}
                         </span>
                       </div>
@@ -192,7 +199,7 @@ const StockHistoryPage = () => {
                         </div>
                         <div>
                           <p className="text-xs text-gray-400">Reference</p>
-                          <span className="text-blue-600 font-medium text-xs">{item.reference_no}</span>
+                          <span className="text-blue-600 font-medium text-xs break-all">{item.reference_no}</span>
                         </div>
                         <div className="col-span-2">
                           <p className="text-xs text-gray-400">Date</p>
@@ -261,12 +268,12 @@ const StockHistoryPage = () => {
           )}
         </div>
 
-        {/* Pagination */}
+        {/* Pagination — use filter.page as source of truth */}
         <ProductPagination
-          currentPage={pagination?.currentPage || 1}
-          totalPages={pagination?.totalPages || 1}
+          currentPage={filter.page}
+          totalPages={pagination?.totalPages || pagination?.lastPage || 1}
           totalItems={pagination?.total || stockHistory.length}
-          limit={pagination?.limit || filter.limit || 10}
+          limit={filter.limit}
           onPageChange={(page) => handleFilterChange('page', page)}
         />
       </div>

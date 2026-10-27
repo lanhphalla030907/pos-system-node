@@ -16,13 +16,13 @@ const TodaySales = () => {
     loadTodayOrders();
   }, []);
 
-  // ✅ FIXED: Show 2 decimal places
+  //  FIXED: Show 2 decimal places
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      minimumFractionDigits: 2,  // ✅ Changed from 0 to 2
-      maximumFractionDigits: 2,  // ✅ Added this for consistency
+      minimumFractionDigits: 2,  //  Changed from 0 to 2
+      maximumFractionDigits: 2,  //  Added this for consistency
     }).format(amount || 0);
   };
 
@@ -118,8 +118,8 @@ const TodaySales = () => {
     <div className="space-y-6">
       {/* Header with gradient accent */}
       <div className="relative overflow-hidden bg-white rounded-xl border border-gray-200">
-        <div className="px-6 py-5">
-          <div className="flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
                 Today's Sales
@@ -128,7 +128,7 @@ const TodaySales = () => {
                 {formatDate(new Date())}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
                 Live
@@ -141,72 +141,72 @@ const TodaySales = () => {
         </div>
 
         {/* Summary Cards - Modern grid with icons */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 px-6 pb-6">
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-5 border border-blue-200/50 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-blue-600 font-medium uppercase tracking-wider">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 px-4 sm:px-6 pb-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 sm:p-5 border border-blue-200/50 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-blue-600 font-medium uppercase tracking-wider">
                   Total Orders
                 </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1.5">
+                <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5">
                   {todayLoading ? "..." : todaySummary?.total_orders || 0}
                 </p>
               </div>
-              <div className="bg-blue-200/50 p-2 rounded-lg">
+              <div className="bg-blue-200/50 p-2 rounded-lg shrink-0">
                 {getStatIcon("orders")}
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-5 border border-green-200/50 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-green-600 font-medium uppercase tracking-wider">
+          <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl p-4 sm:p-5 border border-green-200/50 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-green-600 font-medium uppercase tracking-wider">
                   Total Sales
                 </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1.5">
+                <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1.5 break-all">
                   {todayLoading
                     ? "..."
                     : formatCurrency(todaySummary?.total_sales || 0)}
                 </p>
               </div>
-              <div className="bg-green-200/50 p-2 rounded-lg">
+              <div className="bg-green-200/50 p-2 rounded-lg shrink-0">
                 {getStatIcon("sales")}
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-5 border border-purple-200/50 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-purple-600 font-medium uppercase tracking-wider">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-4 sm:p-5 border border-purple-200/50 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-purple-600 font-medium uppercase tracking-wider">
                   Total Paid
                 </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1.5">
+                <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1.5 break-all">
                   {todayLoading
                     ? "..."
                     : formatCurrency(todaySummary?.total_paid || 0)}
                 </p>
               </div>
-              <div className="bg-purple-200/50 p-2 rounded-lg">
+              <div className="bg-purple-200/50 p-2 rounded-lg shrink-0">
                 {getStatIcon("paid")}
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-5 border border-orange-200/50 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs text-orange-600 font-medium uppercase tracking-wider">
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-4 sm:p-5 border border-orange-200/50 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-orange-600 font-medium uppercase tracking-wider">
                   Total Due
                 </p>
-                <p className="text-2xl font-bold text-gray-900 mt-1.5">
+                <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1.5 break-all">
                   {todayLoading
                     ? "..."
                     : formatCurrency(todaySummary?.total_due || 0)}
                 </p>
               </div>
-              <div className="bg-orange-200/50 p-2 rounded-lg">
+              <div className="bg-orange-200/50 p-2 rounded-lg shrink-0">
                 {getStatIcon("due")}
               </div>
             </div>
@@ -216,12 +216,12 @@ const TodaySales = () => {
 
       {/* Orders Table - Modern design */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
-          <div className="flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50/50">
+          <div className="flex items-center justify-between gap-2">
             <h4 className="text-sm font-semibold text-gray-700">
               Order Details
             </h4>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 shrink-0">
               {todayOrders?.length || 0} orders
             </span>
           </div>
@@ -233,81 +233,138 @@ const TodaySales = () => {
             <p className="text-sm text-gray-500 mt-4">Loading orders...</p>
           </div>
         ) : todayOrders?.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50/30 border-b border-gray-200">
-                  <th className="text-left py-3.5 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Order #
-                  </th>
-                  <th className="text-left py-3.5 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="text-left py-3.5 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Cashier
-                  </th>
-                  <th className="text-right py-3.5 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="text-right py-3.5 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Paid
-                  </th>
-                  <th className="text-left py-3.5 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Payment
-                  </th>
-                  <th className="text-left py-3.5 px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Time
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {todayOrders.map((order, index) => (
-                  <tr
-                    key={order.id}
-                    className="hover:bg-gray-50/70 transition-colors group"
-                  >
-                    <td className="py-3.5 px-6">
-                      <span className="text-sm font-mono font-medium text-gray-700 bg-gray-100 px-2.5 py-1 rounded-md group-hover:bg-gray-200 transition-colors">
-                        {order.order_no}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-6">
-                      <span className="text-sm text-gray-900">
-                        {order.customer_name || "Walk-in"}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-6">
-                      <span className="text-sm text-gray-600">
-                        {order.cashier_name || "-"}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-6 text-right">
-                      <span className="text-sm font-semibold text-gray-900">
-                        {formatCurrency(order.total_amount)}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-6 text-right">
-                      <span className="text-sm font-medium text-green-600">
-                        {formatCurrency(order.paid)}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-6">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 capitalize">
-                        {order.payment_method || "N/A"}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-6">
-                      <span className="text-sm text-gray-500">
-                        {order.create_at ? formatTime(order.create_at) : "-"}
-                      </span>
-                    </td>
+          <>
+            {/* Desktop Table - hidden on mobile */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50/30 border-b border-gray-200">
+                    <th className="text-left py-3.5 px-4 lg:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Order #
+                    </th>
+                    <th className="text-left py-3.5 px-4 lg:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="text-left py-3.5 px-4 lg:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Cashier
+                    </th>
+                    <th className="text-right py-3.5 px-4 lg:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Total
+                    </th>
+                    <th className="text-right py-3.5 px-4 lg:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Paid
+                    </th>
+                    <th className="text-left py-3.5 px-4 lg:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Payment
+                    </th>
+                    <th className="text-left py-3.5 px-4 lg:px-6 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Time
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {todayOrders.map((order) => (
+                    <tr
+                      key={order.id}
+                      className="hover:bg-gray-50/70 transition-colors group"
+                    >
+                      <td className="py-3.5 px-4 lg:px-6">
+                        <span className="text-sm font-mono font-medium text-gray-700 bg-gray-100 px-2.5 py-1 rounded-md group-hover:bg-gray-200 transition-colors">
+                          {order.order_no}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 lg:px-6">
+                        <span className="text-sm text-gray-900">
+                          {order.customer_name || "Walk-in"}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 lg:px-6">
+                        <span className="text-sm text-gray-600">
+                          {order.cashier_name || "-"}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 lg:px-6 text-right">
+                        <span className="text-sm font-semibold text-gray-900">
+                          {formatCurrency(order.total_amount)}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 lg:px-6 text-right">
+                        <span className="text-sm font-medium text-green-600">
+                          {formatCurrency(order.paid)}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 lg:px-6">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 capitalize">
+                          {order.payment_method || "N/A"}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 lg:px-6">
+                        <span className="text-sm text-gray-500">
+                          {order.create_at ? formatTime(order.create_at) : "-"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards - shown only on mobile */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {todayOrders.map((order) => (
+                <div key={order.id} className="p-4">
+                  {/* Top: order # + time */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-xs font-mono font-medium text-gray-700 bg-gray-100 px-2.5 py-1 rounded-md">
+                      {order.order_no}
+                    </span>
+                    <span className="text-xs text-gray-500 shrink-0">
+                      {order.create_at ? formatTime(order.create_at) : "-"}
+                    </span>
+                  </div>
+
+                  {/* Customer + cashier */}
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {order.customer_name || "Walk-in"}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      Cashier: {order.cashier_name || "-"}
+                    </p>
+                  </div>
+
+                  {/* Amounts row */}
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-gray-50 rounded-lg p-2.5">
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider">
+                        Total
+                      </p>
+                      <p className="text-sm font-semibold text-gray-900 mt-0.5 break-all">
+                        {formatCurrency(order.total_amount)}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-2.5">
+                      <p className="text-[10px] text-green-600 uppercase tracking-wider">
+                        Paid
+                      </p>
+                      <p className="text-sm font-semibold text-green-600 mt-0.5 break-all">
+                        {formatCurrency(order.paid)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Payment method badge */}
+                  <div>
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 capitalize">
+                      {order.payment_method || "N/A"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
-          <div className="text-center py-16">
+          <div className="text-center py-16 px-4">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
               <svg
                 className="w-8 h-8 text-gray-400"

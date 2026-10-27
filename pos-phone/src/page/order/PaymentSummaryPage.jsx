@@ -293,7 +293,7 @@ const PaymentSummaryPage = () => {
               ))}
             </div>
             {showCustomDate && (
-              <div className="flex items-center gap-2 ml-2">
+              <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0 sm:ml-2">
                 <input
                   type="date"
                   value={dateFrom}
@@ -416,34 +416,35 @@ const PaymentSummaryPage = () => {
               </div>
             </div>
 
-            {/* Payment Methods Table */}
+            {/* Payment Methods Table / Cards */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50/50">
                 <h3 className="text-sm font-semibold text-gray-800">Payment Methods Breakdown</h3>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Desktop Table - hidden on mobile */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
+                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Percentage</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {paymentSummary.methods?.map((method, index) => {
-                      const percentage = paymentSummary.total > 0 
-                        ? ((method.amount / paymentSummary.total) * 100).toFixed(1) 
+                      const percentage = paymentSummary.total > 0
+                        ? ((method.amount / paymentSummary.total) * 100).toFixed(1)
                         : 0;
                       return (
                         <tr key={method.payment_method_id} className="hover:bg-gray-50/80 transition-colors">
-                          <td className="px-6 py-3 whitespace-nowrap">
+                          <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
                             <span className="text-sm text-gray-400">#{index + 1}</span>
                           </td>
-                          <td className="px-6 py-3 whitespace-nowrap">
+                          <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-3">
                               <span className={`p-2 rounded-lg ${getPaymentColor(method.type)}`}>
                                 {getPaymentIcon(method.type)}
@@ -451,19 +452,19 @@ const PaymentSummaryPage = () => {
                               <span className="text-sm font-medium text-gray-800">{method.name}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-3 whitespace-nowrap">
+                          <td className="px-4 lg:px-6 py-3 whitespace-nowrap">
                             <span className={`inline-flex px-2.5 py-1 text-xs font-medium border rounded-full ${getPaymentColor(method.type)}`}>
                               {method.type || 'Other'}
                             </span>
                           </td>
-                          <td className="px-6 py-3 whitespace-nowrap text-right">
+                          <td className="px-4 lg:px-6 py-3 whitespace-nowrap text-right">
                             <span className="text-sm font-bold text-gray-900">
                               {formatCurrency(method.amount)}
                             </span>
                           </td>
-                          <td className="px-6 py-3 whitespace-nowrap text-right">
+                          <td className="px-4 lg:px-6 py-3 whitespace-nowrap text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="w-20 lg:w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-gray-900 rounded-full"
                                   style={{ width: `${percentage}%` }}
@@ -478,14 +479,69 @@ const PaymentSummaryPage = () => {
                   </tbody>
                   <tfoot className="bg-gray-50 border-t border-gray-200">
                     <tr>
-                      <td colSpan="3" className="px-6 py-3 text-sm font-bold text-gray-800">Total</td>
-                      <td className="px-6 py-3 text-right text-sm font-bold text-gray-900">
+                      <td colSpan="3" className="px-4 lg:px-6 py-3 text-sm font-bold text-gray-800">Total</td>
+                      <td className="px-4 lg:px-6 py-3 text-right text-sm font-bold text-gray-900">
                         {formatCurrency(paymentSummary.total)}
                       </td>
-                      <td className="px-6 py-3 text-right text-sm font-bold text-gray-900">100%</td>
+                      <td className="px-4 lg:px-6 py-3 text-right text-sm font-bold text-gray-900">100%</td>
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+
+              {/* Mobile Cards - shown only on mobile */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {paymentSummary.methods?.map((method, index) => {
+                  const percentage = paymentSummary.total > 0
+                    ? ((method.amount / paymentSummary.total) * 100).toFixed(1)
+                    : 0;
+                  return (
+                    <div key={method.payment_method_id} className="p-4">
+                      {/* Top row: icon + name + amount */}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className={`p-2 rounded-lg shrink-0 ${getPaymentColor(method.type)}`}>
+                            {getPaymentIcon(method.type)}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">
+                              {method.name}
+                            </p>
+                            <span className={`inline-flex mt-1 px-2 py-0.5 text-[10px] font-medium border rounded-full ${getPaymentColor(method.type)}`}>
+                              {method.type || 'Other'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-gray-900">
+                            {formatCurrency(method.amount)}
+                          </p>
+                          <p className="text-[10px] text-gray-400">#{index + 1}</p>
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gray-900 rounded-full"
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs font-medium text-gray-700 shrink-0">{percentage}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Mobile total */}
+                <div className="p-4 bg-gray-50 flex items-center justify-between">
+                  <span className="text-sm font-bold text-gray-800">Total</span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-gray-900">{formatCurrency(paymentSummary.total)}</p>
+                    <p className="text-[10px] text-gray-500">100%</p>
+                  </div>
+                </div>
               </div>
             </div>
           </>

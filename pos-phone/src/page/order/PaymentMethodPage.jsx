@@ -252,22 +252,22 @@ const PaymentMethodPage = () => {
     <div className="min-h-screen bg-gray-50">
       <div>
         {/* Header */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-6 hover:shadow-md transition-shadow">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm mb-6 hover:shadow-md transition-shadow">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center shrink-0">
                   <FiCreditCard className="w-5 h-5 text-white" />
                 </div>
                 Payment Methods
               </h1>
-              <p className="text-sm text-gray-500 mt-1 ml-14">
+              <p className="text-sm text-gray-500 mt-1 sm:ml-14">
                 Manage payment methods for POS and orders
               </p>
             </div>
             <button
               onClick={openCreateModal}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg transition-all shadow-sm"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg transition-all shadow-sm w-full sm:w-auto"
             >
               <FiPlus className="w-4 h-4" />
               Add Payment Method
@@ -318,11 +318,11 @@ const PaymentMethodPage = () => {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Payment Methods List */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-medium text-gray-700">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-sm font-medium text-gray-700 truncate">
                 Payment Methods List
               </h2>
               <p className="text-xs text-gray-400 mt-0.5">
@@ -337,7 +337,7 @@ const PaymentMethodPage = () => {
                   duration: 2000,
                 });
               }}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
             >
               <FiRefreshCw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -353,7 +353,7 @@ const PaymentMethodPage = () => {
               </p>
             </div>
           ) : paymentMethods.length === 0 ? (
-            <div className="text-center py-16">
+            <div className="text-center py-16 px-4">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FiCreditCard className="w-8 h-8 text-gray-300" />
               </div>
@@ -372,112 +372,199 @@ const PaymentMethodPage = () => {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      #
-                    </th>
-                    <th className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="text-right py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {paymentMethods.map((method, index) => (
-                    <tr
-                      key={method.id}
-                      className="hover:bg-gray-50/80 transition-colors group"
-                    >
-                      <td className="py-3 px-6">
-                        <span className="text-sm text-gray-400">
-                          #{index + 1}
-                        </span>
-                      </td>
-                      <td className="py-3 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
-                            {getTypeIcon(method.type)}
+            <>
+              {/* Desktop Table - hidden on mobile */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="text-left py-3 px-4 lg:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        #
+                      </th>
+                      <th className="text-left py-3 px-4 lg:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="text-left py-3 px-4 lg:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="text-left py-3 px-4 lg:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="text-right py-3 px-4 lg:px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {paymentMethods.map((method, index) => (
+                      <tr
+                        key={method.id}
+                        className="hover:bg-gray-50/80 transition-colors group"
+                      >
+                        <td className="py-3 px-4 lg:px-6">
+                          <span className="text-sm text-gray-400">
+                            #{index + 1}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 lg:px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 shrink-0">
+                              {getTypeIcon(method.type)}
+                            </div>
+                            <span className="text-sm font-medium text-gray-800">
+                              {method.name}
+                            </span>
                           </div>
-                          <span className="text-sm font-medium text-gray-800">
+                        </td>
+                        <td className="py-3 px-4 lg:px-6">
+                          <span
+                            className={`inline-flex px-2.5 py-1 text-xs font-medium border rounded-full ${getTypeBadge(method.type)}`}
+                          >
+                            {getTypeLabel(method.type)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 lg:px-6">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                              method.is_active === 1
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-gray-100 text-gray-500"
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                                method.is_active === 1
+                                  ? "bg-emerald-500"
+                                  : "bg-gray-400"
+                              }`}
+                            ></span>
+                            {method.is_active === 1 ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 lg:px-6 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() =>
+                                handleStatusToggle(
+                                  method.id,
+                                  method.is_active,
+                                  method.name,
+                                )
+                              }
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                method.is_active === 1
+                                  ? "text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50"
+                                  : "text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50"
+                              }`}
+                              title={
+                                method.is_active === 1
+                                  ? "Deactivate"
+                                  : "Activate"
+                              }
+                            >
+                              {method.is_active === 1 ? (
+                                <FiX className="w-4 h-4" />
+                              ) : (
+                                <FiCheck className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleEdit(method)}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit"
+                            >
+                              <FiEdit2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards - shown only on mobile */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {paymentMethods.map((method, index) => (
+                  <div key={method.id} className="p-4">
+                    {/* Top: icon + name + index */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 shrink-0">
+                          {getTypeIcon(method.type)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">
                             {method.name}
+                          </p>
+                          <span
+                            className={`inline-flex mt-1 px-2 py-0.5 text-[10px] font-medium border rounded-full ${getTypeBadge(method.type)}`}
+                          >
+                            {getTypeLabel(method.type)}
                           </span>
                         </div>
-                      </td>
-                      <td className="py-3 px-6">
+                      </div>
+                      <span className="text-xs text-gray-400 shrink-0">
+                        #{index + 1}
+                      </span>
+                    </div>
+
+                    {/* Status + Actions row */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                          method.is_active === 1
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
                         <span
-                          className={`inline-flex px-2.5 py-1 text-xs font-medium border rounded-full ${getTypeBadge(method.type)}`}
-                        >
-                          {getTypeLabel(method.type)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-6">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                          className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
                             method.is_active === 1
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-gray-100 text-gray-500"
+                              ? "bg-emerald-500"
+                              : "bg-gray-400"
                           }`}
+                        ></span>
+                        {method.is_active === 1 ? "Active" : "Inactive"}
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() =>
+                            handleStatusToggle(
+                              method.id,
+                              method.is_active,
+                              method.name,
+                            )
+                          }
+                          className={`p-2 rounded-lg transition-colors ${
+                            method.is_active === 1
+                              ? "text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 bg-yellow-50/50"
+                              : "text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 bg-emerald-50/50"
+                          }`}
+                          title={
+                            method.is_active === 1 ? "Deactivate" : "Activate"
+                          }
                         >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                              method.is_active === 1
-                                ? "bg-emerald-500"
-                                : "bg-gray-400"
-                            }`}
-                          ></span>
-                          {method.is_active === 1 ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-6 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() =>
-                              handleStatusToggle(
-                                method.id,
-                                method.is_active,
-                                method.name,
-                              )
-                            }
-                            className={`p-1.5 rounded-lg transition-colors ${
-                              method.is_active === 1
-                                ? "text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50"
-                                : "text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50"
-                            }`}
-                            title={
-                              method.is_active === 1 ? "Deactivate" : "Activate"
-                            }
-                          >
-                            {method.is_active === 1 ? (
-                              <FiX className="w-4 h-4" />
-                            ) : (
-                              <FiCheck className="w-4 h-4" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleEdit(method)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Edit"
-                          >
-                            <FiEdit2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                          {method.is_active === 1 ? (
+                            <FiX className="w-4 h-4" />
+                          ) : (
+                            <FiCheck className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleEdit(method)}
+                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 bg-gray-50 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <FiEdit2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -486,7 +573,7 @@ const PaymentMethodPage = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white z-10 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="sticky top-0 bg-white z-10 px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">
                   {editingMethod ? "Edit Payment Method" : "Add Payment Method"}
@@ -499,13 +586,13 @@ const PaymentMethodPage = () => {
               </div>
               <button
                 onClick={closeModal}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
               >
                 <FiX className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Payment Method Name <span className="text-red-500">*</span>
@@ -552,7 +639,7 @@ const PaymentMethodPage = () => {
                         key={type}
                         type="button"
                         onClick={() => setFormData({ ...formData, type })}
-                        className={`p-3 rounded-lg border-2 text-center transition-all ${
+                        className={`p-2 sm:p-3 rounded-lg border-2 text-center transition-all ${
                           isSelected
                             ? "border-black bg-gray-50 shadow-sm"
                             : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
@@ -568,7 +655,7 @@ const PaymentMethodPage = () => {
                           {icons[type]}
                         </div>
                         <p
-                          className={`text-xs mt-1.5 font-medium ${
+                          className={`text-[10px] sm:text-xs mt-1.5 font-medium ${
                             isSelected ? "text-black" : "text-gray-600"
                           }`}
                         >
