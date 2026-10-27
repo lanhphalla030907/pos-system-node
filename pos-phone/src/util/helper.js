@@ -10,9 +10,9 @@ export const request = async (url = "", method = "get", data = {}) => {
     const headers = {
       Authorization: "Bearer " + access_token,
     };
-    if (data instanceof FormData) {
-      headers["Content-Type"] = "multipart/form-data";
-    } else {
+    // Do NOT set Content-Type for FormData — the browser/axios must generate
+    // it automatically so the multipart boundary parameter is included.
+    if (!(data instanceof FormData)) {
       headers["Content-Type"] = "application/json";
     }
     const res = await axios({

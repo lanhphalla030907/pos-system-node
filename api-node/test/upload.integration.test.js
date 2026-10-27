@@ -131,3 +131,30 @@ test("rejects bytes that do not match the declared image type", async (t) => {
   assert.equal(response.status, 400);
   assert.match(body.message, /not a valid JPG or PNG image/);
 });
+
+test("errorHandler maps ER_DUP_ENTRY to 400 with duplicate message", () => {
+  const req = {};
+  let statusCode = 200;
+  let jsonBody = null;
+  const res = {
+    status(code) {
+      statusCode = code;
+      return this;
+    },
+    json(payload) {
+      jsonBody = payload;
+      return this;
+    },
+  };
+
+  const dupError = new Error("Duplicate entry 'BAR-001' for key 'idx_product_barcode_unique'");
+  dupError.code = "ER_DUP_ENTRY";
+  dupError.errno = 1062;
+
+  errorHandler(dupError, req, res, () => {});
+
+  assert.equal(statusCode, 400);
+  assert.equal(jsonBody.success, false);
+  assert.equal(jsonBody.message, "This barcode already belongs to another product");
+});
+

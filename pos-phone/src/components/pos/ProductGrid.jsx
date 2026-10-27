@@ -1,11 +1,14 @@
 // components/pos/ProductGrid.jsx - Fixed list view with ProductImage component
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import ProductCard from "./ProductCard";
 import ProductImage from "../product/ProductImage";
+import BarcodeScannerModal from "../common/BarcodeScannerModal";
+import { useAlert } from "../common/Alert";
+import { getProductByBarcode } from "../../api/productApi";
 import { getActiveCategories } from "../../api/categoryApi";
 import { formatCurrency, toDisplay, getCurrencyRate } from "../../util/currency";
 import { useSettingsStore } from "../../store/settings.store";
-import { FiSearch, FiFilter, FiX, FiGrid, FiList, FiBox } from "react-icons/fi";
+import { FiSearch, FiFilter, FiX, FiGrid, FiList, FiBox, FiCamera } from "react-icons/fi";
 
 const ProductGrid = ({
   products,
@@ -19,8 +22,119 @@ const ProductGrid = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categories, setCategories] = useState([]);
+  const alert = useAlert();
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const lastScannedRef = useRef({ code: "", time: 0 });
+
+  // Look up product by barcode (local or API) and add to cart
+  const handleBarcodeLookup = useCallback(
+    async (rawCode) => {
+      const code = String(rawCode || "").trim();
+      if (!code) return;
+      console.log(`[ProductGrid] Received barcode lookup request: "${code}"`);
+
+      // Prevent duplicate scan events within 1200ms
+      const now = Date.now();
+      if (
+        lastScannedRef.current.code === code &&
+        now - lastScannedRef.current.time < 1200
+      ) {
+        return;
+      }
+      lastScannedRef.current = { code, time: now };
+
+      // 1. Check local loaded products list first (exact barcode match)
+      const localMatch = Array.isArray(products)
+        ? products.find(
+            (p) => String(p?.barcode || "").toLowerCase() === code.toLowerCase(),
+          )
+        : null;
+
+      if (localMatch) {
+        onProductClick(localMatch);
+        setSearchTerm("");
+        return;
+      }
+
+      // 2. Query backend by barcode if not present on currently loaded page
+      try {
+        const res = await getProductByBarcode(code);
+        if (res?.success && res?.data) {
+          onProductClick(res.data);
+          setSearchTerm("");
+          return;
+        }
+      } catch (err) {
+        console.error("Barcode lookup failed:", err);
+      }
+
+      // 3. Not found warning
+      alert.warning("No product was found for this barcode", {
+        description: `Barcode "${code}" does not match any product in inventory.`,
+      });
+    },
+    [products, onProductClick, alert],
+  );
+
+  const searchInputRef = useRef(null);
+
+  // Auto-focus search input on mount for instant USB barcode scanner readiness
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Global listener for hardware USB keyboard-emulating barcode scanners
+  useEffect(() => {
+    let buffer = "";
+    let lastKeyTime = Date.now();
+
+    const handleGlobalKeyDown = (e) => {
+      // Don't intercept if user is typing in another input/textarea
+      const tag = e.target?.tagName?.toLowerCase();
+      if (tag === "textarea" || (tag === "input" && e.target !== searchInputRef.current)) {
+        return;
+      }
+
+      const now = Date.now();
+      const diff = now - lastKeyTime;
+      lastKeyTime = now;
+
+      // Scanners type fast: consecutive keystrokes within 70ms
+      if (diff > 75 && buffer.length > 0) {
+        buffer = ""; // reset buffer if slow human typing
+      }
+
+      if (e.key === "Enter") {
+        if (buffer.length >= 3) {
+          e.preventDefault();
+          const scanned = buffer.trim();
+          buffer = "";
+          handleBarcodeLookup(scanned);
+        }
+      } else if (e.key.length === 1) {
+        buffer += e.key;
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [handleBarcodeLookup]);
+
+  const handleKeyDown = (e) => {
+    // Handle USB barcode scanner Enter event in focused input
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const val = searchTerm.trim();
+      if (val) {
+        handleBarcodeLookup(val);
+      }
+    }
+  };
 
   // Load categories
   useEffect(() => {
@@ -82,23 +196,38 @@ const ProductGrid = ({
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Search and Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-3 flex-shrink-0">
-        <div className="flex-1 relative">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="flex-1 relative flex items-center">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
           <input
+            ref={searchInputRef}
             type="text"
-            placeholder="Search by name or barcode..."
+            placeholder="Search by name, barcode, or scan with USB scanner..."
             value={searchTerm}
             onChange={handleSearch}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
+            onKeyDown={handleKeyDown}
+            className="w-full pl-9 pr-16 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-black/10 focus:border-black outline-none transition-all bg-white"
           />
-          {searchTerm && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded transition"
+                aria-label="Clear search"
+              >
+                <FiX className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
-              onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              type="button"
+              onClick={() => setIsScannerOpen(true)}
+              className="p-1.5 text-gray-600 hover:text-black hover:bg-gray-100 rounded-md transition"
+              title="Scan barcode with camera"
+              aria-label="Scan barcode with camera"
             >
-              <FiX className="w-4 h-4" />
+              <FiCamera className="w-4 h-4" />
             </button>
-          )}
+          </div>
         </div>
 
         <div className="flex gap-2">
@@ -318,6 +447,15 @@ const ProductGrid = ({
           </div>
         )}
       </div>
+
+      {/* Barcode Scanner Modal for POS screen */}
+      <BarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={handleBarcodeLookup}
+        title="Scan Barcode (POS Sale)"
+        instruction="Scan product barcode to add it to the cart"
+      />
     </div>
   );
 };

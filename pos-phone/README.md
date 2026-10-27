@@ -163,6 +163,44 @@ Any unmatched path renders a simple "Route not found" message.
 | `npm run preview` | Preview production build   |
 | `npm run lint`  | Run ESLint                   |
 
+## Barcode Scanning & Product Photo Capture
+
+### 1. Camera Barcode Scanner
+- **Where**: Available in **Add/Edit Product Modal** (via the "Scan" tab) and in the **POS Sales Screen** (via the camera icon in the search bar).
+- **Supported Formats**: EAN-13, EAN-8, UPC-A, UPC-E, Code 128, Code 39, QR Code.
+- **Workflow**:
+  1. Click the "Scan" tab in the product form, or click the camera icon beside the POS search bar.
+  2. The browser prompts for camera access (only requested on explicit click).
+  3. Select from available cameras (front/rear) if multiple cameras are detected.
+  4. Point camera at the physical barcode inside the targeting box.
+  5. On scan detection, camera media tracks stop immediately, and the barcode is automatically populated or added to the POS cart.
+  6. Accidental duplicate scans are throttled with a 1.2-second debounce filter.
+
+### 2. USB Barcode Scanner
+- Conventional USB barcode scanners that emulate HID keyboard input type into the active input and send an `Enter` key.
+- **In Product Form**:
+  - Select the "Manual / USB" tab.
+  - Scan the product barcode. The input receives the scanned digits without form pre-submission, trims accidental whitespace, and checks barcode uniqueness in real-time.
+- **In POS Sales Screen**:
+  - Focus or scan directly into the search bar.
+  - The scanner enters the barcode and sends `Enter`.
+  - The POS automatically finds the matching product (from local cache or via `/api/product/barcode/:barcode`), checks available inventory, and adds it directly to the active cart.
+
+### 3. Take Product Photos Directly
+- **Where**: In **Add/Edit Product Modal** under the "Product Image" field.
+- **Workflow**:
+  1. Click **"Take Photo"**.
+  2. Browser asks for camera permissions. Rear camera is preferred on mobile devices.
+  3. Frame the product in the live preview and click **"Capture Photo"**.
+  4. Review the snapshot. Users can **"Retake Photo"** or click **"Use This Photo"**.
+  5. The image is converted into a standard JPEG `File` object and uploaded through the backend's validation pipeline (MIME check, magic bytes check, and 3 MB limit).
+  6. Users can still click **"Choose File"** at any time to select existing files.
+
+### 4. Browser & HTTPS Requirements
+- Modern browsers require **HTTPS** (or `localhost`) to access camera devices via `navigator.mediaDevices.getUserMedia`.
+- On non-HTTPS production domains, camera access will be disabled by the browser. Clear fallback guidance is provided to enter barcodes manually or select image files from disk.
+- Camera access requires explicit user permission. If denied, clear instructions appear in the UI.
+
 ## License
 
 MIT

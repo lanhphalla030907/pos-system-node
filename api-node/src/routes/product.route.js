@@ -1,6 +1,7 @@
 const {
   getProducts,
   getProduct,
+  getProductByBarcode,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -21,6 +22,11 @@ module.exports = (app) => {
     "/api/product/generate-barcode",
     validate_token(),
     generateProductBarcode,
+  );
+  app.get(
+    "/api/product/barcode/:barcode",
+    validate_token(),
+    getProductByBarcode,
   );
   app.get("/api/product/:id", validate_token(), getProduct);
 

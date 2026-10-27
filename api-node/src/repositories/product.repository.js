@@ -97,6 +97,21 @@ exports.getById = async (id) => {
   );
   return rows[0];
 };
+
+// Get Product By Barcode
+exports.getByBarcode = async (barcode) => {
+  if (!barcode) return null;
+  const [rows] = await db.query(
+    `
+    SELECT *
+    FROM product
+    WHERE barcode = ?
+    LIMIT 1
+    `,
+    [barcode],
+  );
+  return rows[0] || null;
+};
 // Create Product
 exports.create = async (data, user) => {
   const {

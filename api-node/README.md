@@ -115,6 +115,12 @@ The migration only adds nullable `image_public_id` columns and seeds the
 internal `store_logo_public_id` settings key. It does not alter or delete
 existing image values.
 
+To enforce barcode uniqueness at the database level:
+
+```bash
+mysql -u <user> -p <database> < ../database/migrations/20261026_product_barcode_unique.sql
+```
+
 ### 4. Configure Cloudinary
 
 Create a Cloudinary account (or use an existing one) and copy the cloud name,
@@ -252,7 +258,7 @@ Paginated endpoints return `{ data, pagination: { total, page, limit, totalPages
 | Area                  | Endpoints                                                                                                                        |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | **Auth**              | `POST /api/auth/login` *(public)*, `GET /api/auth/profile`, `PUT /api/auth/change-password`, `GET /api/auth/getlist`, `POST /api/auth/register` |
-| **Products**          | `GET/POST /api/product`, `GET/PUT/DELETE /api/product/:id`, `/summary`, `/top-sale`, `/generate-barcode`                          |
+| **Products**          | `GET/POST /api/product`, `GET/PUT/DELETE /api/product/:id`, `/summary`, `/top-sale`, `/generate-barcode`, `GET /api/product/barcode/:barcode` |
 | **Categories**        | `GET/POST /api/category`, `GET/PUT/DELETE /api/category/:id`                                                                     |
 | **Suppliers**         | `GET/POST /api/supplier`, `GET/PUT/DELETE /api/supplier/:id`                                                                     |
 | **Orders**            | `POST/GET /api/order`, `GET /api/order/:id`, `/today`, `/today-summary`, `/chart`                                                |

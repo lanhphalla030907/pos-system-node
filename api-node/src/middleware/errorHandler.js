@@ -12,8 +12,12 @@ const getMulterMessage = (err) => {
   }
 };
 
+const isDuplicateEntryError = (err) =>
+  err?.code === "ER_DUP_ENTRY" || err?.errno === 1062;
+
 const errorHandler = (err, req, res, next) => {
-  const statusCode = err.statusCode || (isMulterError(err) ? 400 : 500);
+  const isDup = isDuplicateEntryError(err);
+  const statusCode = err.statusCode || (isMulterError(err) || isDup ? 400 : 500);
 
   if (statusCode >= 500) {
     console.error(err.stack);
@@ -22,6 +26,8 @@ const errorHandler = (err, req, res, next) => {
   let message = err.message;
   if (isMulterError(err)) {
     message = getMulterMessage(err);
+  } else if (isDup) {
+    message = "This barcode already belongs to another product";
   } else if (statusCode === 500) {
     message = "Internal Server Error";
   }

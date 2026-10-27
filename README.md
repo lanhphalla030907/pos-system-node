@@ -83,6 +83,7 @@ the forward-only Cloudinary migration:
 
 ```bash
 mysql -u <user> -p <database> < database/migrations/20261026_cloudinary_image_storage.sql
+mysql -u <user> -p <database> < database/migrations/20261026_product_barcode_unique.sql
 ```
 
 ### 3. Configure the backend

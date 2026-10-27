@@ -29,6 +29,15 @@ exports.getProduct = asyncHandler(async (req, res) => {
   });
 });
 
+exports.getProductByBarcode = asyncHandler(async (req, res) => {
+  const data = await productService.getProductByBarcode(req.params.barcode);
+
+  res.json({
+    success: true,
+    data,
+  });
+});
+
 exports.createProduct = asyncHandler(async (req, res) => {
   const data = {
     category_id: req.body.category_id,

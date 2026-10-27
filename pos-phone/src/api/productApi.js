@@ -23,6 +23,9 @@ export const updateProduct = async (id, formData) => {
 export const generateBarcode = async () => {
   return await request("product/generate-barcode", "get");
 };
+export const getProductByBarcode = async (barcode) => {
+  return await request(`product/barcode/${encodeURIComponent(barcode)}`, "get");
+};
 //  (Delete Product)
 export const deleteProduct = async (id) => {
   return await request(`product/${id}`, "delete");

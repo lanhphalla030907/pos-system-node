@@ -38,6 +38,7 @@ const setup = () => {
     updateError: null,
     removeError: null,
     existing: null,
+    existingBarcodeProduct: null,
     safeDeleteCalls: [],
     repoCreateArgs: null,
     repoUpdateArgs: null,
@@ -63,6 +64,12 @@ const setup = () => {
     },
     async getById() {
       return state.existing;
+    },
+    async getByBarcode(barcode) {
+      if (state.existingBarcodeProduct && state.existingBarcodeProduct.barcode === barcode) {
+        return state.existingBarcodeProduct;
+      }
+      return null;
     },
     async getTopSale() {
       return [];
@@ -291,3 +298,99 @@ test("delete reports a missing product without deleting anything", async (t) => 
   });
   assert.equal(state.events.length, 0);
 });
+
+test("create rejects a duplicate barcode", async (t) => {
+  const { service, state, cleanup } = setup();
+  t.after(cleanup);
+  state.existingBarcodeProduct = { id: 10, barcode: "001234567890", name: "Existing" };
+
+  await assert.rejects(
+    () => service.createProduct({ ...productData, barcode: "001234567890" }, "admin", null),
+    (err) => {
+      assert.equal(err.statusCode, 400);
+      assert.match(err.message, /already belongs to another product/);
+      return true;
+    },
+  );
+  assert.equal(state.events.includes("db.create"), false);
+});
+
+test("create preserves leading zeros and trims barcode whitespace", async (t) => {
+  const { service, state, cleanup } = setup();
+  t.after(cleanup);
+
+  const id = await service.createProduct(
+    { ...productData, barcode: "  000987654321  " },
+    "admin",
+    null,
+  );
+
+  assert.equal(id, 42);
+  assert.equal(state.repoCreateArgs.data.barcode, "000987654321");
+});
+
+test("update rejects duplicate barcode belonging to a different product", async (t) => {
+  const { service, state, cleanup } = setup();
+  t.after(cleanup);
+  state.existing = { id: 7, barcode: "BAR-000007" };
+  state.existingBarcodeProduct = { id: 15, barcode: "001234567890" };
+
+  await assert.rejects(
+    () => service.updateProduct(7, { ...productData, barcode: "001234567890" }, null),
+    (err) => {
+      assert.equal(err.statusCode, 400);
+      assert.match(err.message, /already belongs to another product/);
+      return true;
+    },
+  );
+  assert.equal(state.events.includes("db.update"), false);
+});
+
+test("update allows keeping its own existing barcode", async (t) => {
+  const { service, state, cleanup } = setup();
+  t.after(cleanup);
+  state.existing = { id: 7, barcode: "001234567890" };
+  state.existingBarcodeProduct = { id: 7, barcode: "001234567890" };
+
+  const affected = await service.updateProduct(
+    7,
+    { ...productData, barcode: "001234567890" },
+    null,
+  );
+
+  assert.equal(affected, 1);
+  assert.equal(state.repoUpdateArgs.data.barcode, "001234567890");
+});
+
+test("getProductByBarcode returns product and preserves barcode string", async (t) => {
+  const { service, state, cleanup } = setup();
+  t.after(cleanup);
+  state.existingBarcodeProduct = { id: 5, barcode: "0054321", name: "Leading zero item" };
+
+  const result = await service.getProductByBarcode("0054321");
+
+  assert.deepEqual(result, state.existingBarcodeProduct);
+  assert.strictEqual(typeof result.barcode, "string");
+  assert.equal(result.barcode, "0054321");
+});
+
+test("getProductByBarcode throws 404 when barcode does not exist", async (t) => {
+  const { service, cleanup } = setup();
+  t.after(cleanup);
+
+  await assert.rejects(
+    () => service.getProductByBarcode("999999999999"),
+    { statusCode: 404, message: "Product not found" },
+  );
+});
+
+test("getProductByBarcode rejects missing or empty barcode", async (t) => {
+  const { service, cleanup } = setup();
+  t.after(cleanup);
+
+  await assert.rejects(
+    () => service.getProductByBarcode(""),
+    { statusCode: 400, message: "Barcode is required" },
+  );
+});
+

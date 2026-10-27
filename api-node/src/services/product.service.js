@@ -14,6 +14,18 @@ exports.getProductById = async (id) => {
   return product;
 };
 
+exports.getProductByBarcode = async (barcode) => {
+  if (!barcode || typeof barcode !== "string") {
+    throw new AppError("Barcode is required", 400);
+  }
+  const cleanBarcode = barcode.trim();
+  const product = await productRepository.getByBarcode(cleanBarcode);
+  if (!product) {
+    throw new AppError("Product not found", 404);
+  }
+  return product;
+};
+
 exports.createProduct = async (data, user, file) => {
   const {
     category_id,
@@ -60,6 +72,17 @@ exports.createProduct = async (data, user, file) => {
   if (productCostPrice > productPrice) {
     throw new AppError("Cost price cannot be greater than selling price", 400);
   }
+
+  // BARCODE VALIDATION & DUPLICATE PROTECTION
+  let cleanBarcode = null;
+  if (data.barcode !== undefined && data.barcode !== null && String(data.barcode).trim() !== "") {
+    cleanBarcode = String(data.barcode).trim();
+    const existing = await productRepository.getByBarcode(cleanBarcode);
+    if (existing) {
+      throw new AppError("This barcode already belongs to another product", 400);
+    }
+  }
+
   // CREATE
   let uploadedImage = null;
   if (file) {
@@ -70,6 +93,7 @@ exports.createProduct = async (data, user, file) => {
     return await productRepository.create(
       {
         ...data,
+        barcode: cleanBarcode,
         image: uploadedImage ? uploadedImage.image : null,
         image_public_id: uploadedImage ? uploadedImage.publicId : null,
         qty: productQty,
@@ -100,6 +124,17 @@ exports.updateProduct = async (id, data, file) => {
   if (!existProduct) {
     throw new AppError("Product not found", 404);
   }
+
+  // BARCODE VALIDATION & DUPLICATE PROTECTION
+  let cleanBarcode = null;
+  if (data.barcode !== undefined && data.barcode !== null && String(data.barcode).trim() !== "") {
+    cleanBarcode = String(data.barcode).trim();
+    const existing = await productRepository.getByBarcode(cleanBarcode);
+    if (existing && String(existing.id) !== String(id)) {
+      throw new AppError("This barcode already belongs to another product", 400);
+    }
+  }
+  data.barcode = cleanBarcode;
 
   let uploadedImage = null;
   if (file) {
